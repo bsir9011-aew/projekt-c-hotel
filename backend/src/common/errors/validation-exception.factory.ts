@@ -1,6 +1,4 @@
-import { HttpStatus } from '@nestjs/common';
 import type { ValidationError } from 'class-validator';
-import { ApiErrorCode } from './api-error-code.enum.js';
 import { ApiException } from './api-exception.js';
 import type { ErrorDetailDto } from './error-response.dto.js';
 
@@ -26,10 +24,5 @@ export function flattenValidationErrors(
 export function validationExceptionFactory(
   errors: ValidationError[],
 ): ApiException {
-  return new ApiException(
-    HttpStatus.BAD_REQUEST,
-    ApiErrorCode.VALIDATION_ERROR,
-    'Request validation failed.',
-    flattenValidationErrors(errors),
-  );
+  return ApiException.validation(flattenValidationErrors(errors));
 }
