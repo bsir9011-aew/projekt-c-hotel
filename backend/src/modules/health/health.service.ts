@@ -1,8 +1,6 @@
-import {
-  Injectable,
-  Logger,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { ApiErrorCode } from '../../common/errors/api-error-code.enum.js';
+import { ApiException } from '../../common/errors/api-exception.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { HealthResponseDto } from './dto/health-response.dto.js';
 
@@ -21,12 +19,11 @@ export class HealthService {
         'Database health check failed',
         error instanceof Error ? error.stack : String(error),
       );
-      const response: HealthResponseDto = {
-        status: 'error',
-        database: 'down',
-        timestamp: new Date().toISOString(),
-      };
-      throw new ServiceUnavailableException(response);
+      throw new ApiException(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        ApiErrorCode.SERVICE_UNAVAILABLE,
+        'The database is unreachable.',
+      );
     }
 
     return {

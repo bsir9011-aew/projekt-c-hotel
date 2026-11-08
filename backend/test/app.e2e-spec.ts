@@ -60,7 +60,29 @@ describe('Application (e2e)', () => {
       .get('/api/v1/health')
       .expect(503);
 
-    expect(response.body).toMatchObject({ status: 'error', database: 'down' });
+    expect(response.body).toMatchObject({
+      statusCode: 503,
+      code: 'SERVICE_UNAVAILABLE',
+      path: '/api/v1/health',
+    });
+  });
+
+  it('returns unknown routes in the standard error format', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/unknown?email=jan@example.com')
+      .expect(404);
+
+    expect(response.body).toMatchObject({
+      statusCode: 404,
+      error: 'Not Found',
+      code: 'NOT_FOUND',
+      details: [],
+    });
+    // Query string nie może trafić do odpowiedzi, bo może zawierać dane osobowe. (DamianTchorzewski_72206)
+    expect(response.body.path).toBe('/api/v1/unknown');
+    expect(new Date(response.body.timestamp).toString()).not.toBe(
+      'Invalid Date',
+    );
   });
 
   it('serves the OpenAPI document under /api/docs-json', async () => {

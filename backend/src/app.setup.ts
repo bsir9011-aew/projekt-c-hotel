@@ -1,10 +1,18 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { HttpAdapterHost } from '@nestjs/core';
+import {
+  DocumentBuilder,
+  SwaggerModule,
+  type OpenAPIObject,
+} from '@nestjs/swagger';
+import { validationExceptionFactory } from './common/errors/validation-exception.factory.js';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter.js';
 import type { EnvironmentVariables } from './config/env.validation.js';
 
 export const API_PREFIX = 'api/v1';
 export const SWAGGER_PATH = 'api/docs';
+export const API_KEY_SECURITY_NAME = 'api-key';
 
 // Wspólna konfiguracja aplikacji dla main.ts i testów e2e, aby testy sprawdzały to samo, co produkcja. (DamianTchorzewski_72206)
 export function setupApp(app: INestApplication): void {
@@ -26,20 +34,29 @@ export function setupApp(app: INestApplication): void {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 
+  // Każdy błąd, także nieoczekiwany, wychodzi w jednolitym formacie z kontraktu API. (DamianTchorzewski_72206)
+  app.useGlobalFilters(new ApiExceptionFilter(app.get(HttpAdapterHost)));
+
   // Swagger musi być skonfigurowany po prefiksie, aby ścieżki w dokumentacji były poprawne. (DamianTchorzewski_72206)
-  setupSwagger(app);
+  SwaggerModule.setup(SWAGGER_PATH, app, createOpenApiDocument(app));
 }
 
-function setupSwagger(app: INestApplication): void {
+// Buduje dokument OpenAPI, który jest maszynowo odczytywalną wersją kontraktu API. (DamianTchorzewski_72206)
+export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
   const options = new DocumentBuilder()
     .setTitle('Hotel C REST API')
     .setDescription(
       'Hotel system API: rooms, holiday packages, bookings and integrations with partner teams (massage, fitness, vouchers).',
     )
     .setVersion('1.0.0')
+    .addApiKey(
+      { type: 'apiKey', name: 'X-API-Key', in: 'header' },
+      API_KEY_SECURITY_NAME,
+    )
     .addTag('health', 'Application and database status')
     .addTag('rooms', 'Room search and details')
     .addTag('packages', 'Holiday packages')
@@ -50,9 +67,5 @@ function setupSwagger(app: INestApplication): void {
     )
     .build();
 
-  SwaggerModule.setup(
-    SWAGGER_PATH,
-    app,
-    SwaggerModule.createDocument(app, options),
-  );
+  return SwaggerModule.createDocument(app, options);
 }
