@@ -6,6 +6,10 @@ import {
   SwaggerModule,
   type OpenAPIObject,
 } from '@nestjs/swagger';
+import {
+  API_KEY_HEADER,
+  API_KEY_SECURITY_NAME,
+} from './common/constants/api.constants.js';
 import { validationExceptionFactory } from './common/errors/validation-exception.factory.js';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter.js';
 import { VALIDATION_OPTIONS } from './common/validation/validation.options.js';
@@ -13,7 +17,6 @@ import type { EnvironmentVariables } from './config/env.validation.js';
 
 export const API_PREFIX = 'api/v1';
 export const SWAGGER_PATH = 'api/docs';
-export const API_KEY_SECURITY_NAME = 'api-key';
 
 // Wspólna konfiguracja aplikacji dla main.ts i testów e2e, aby testy sprawdzały to samo, co produkcja. (DamianTchorzewski_72206)
 export function setupApp(app: INestApplication): void {
@@ -53,8 +56,11 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
       'Hotel system API: rooms, holiday packages, bookings and integrations with partner teams (massage, fitness, vouchers).',
     )
     .setVersion('1.0.0')
+    // OpenAPI 3.1 opisuje null jako zwykły typ. W wersji 3.0 pole nullable z odwołaniem do schematu formalnie nie dopuszcza null. (DamianTchorzewski_72206)
+    .setOpenAPIVersion('3.1.0')
+    .addServer('http://localhost:3000', 'Local development')
     .addApiKey(
-      { type: 'apiKey', name: 'X-API-Key', in: 'header' },
+      { type: 'apiKey', name: API_KEY_HEADER, in: 'header' },
       API_KEY_SECURITY_NAME,
     )
     .addTag('health', 'Application and database status')
