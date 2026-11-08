@@ -1,0 +1,4 @@
+# Lokalne zmienne środowiskowe nie mogą trafić do repozytorium. (DamianTchorzewski_72206)
+.env
+.env.*
+!.env.example
