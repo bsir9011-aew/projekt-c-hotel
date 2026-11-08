@@ -10,6 +10,8 @@ export default defineConfig({
     env: {
       DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
       FRONTEND_URL: 'http://localhost:5173',
+      // Limit żądań przeszkadzałby w testach, więc włącza go tylko test rate-limit.e2e-spec.ts. (DamianTchorzewski_72206)
+      RATE_LIMIT_ENABLED: 'false',
       INTEGRATION_API_KEYS:
         'massage:test-massage-key-0001,fitness:test-fitness-key-0002',
     },

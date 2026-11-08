@@ -5,6 +5,11 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import {
+  CANCEL_RATE_LIMIT,
+  RATE_LIMIT_WINDOW_MS,
+} from '../../common/rate-limit/rate-limit.constants.js';
 import { ApiErrorResponses } from '../../common/swagger/api-error-responses.decorator.js';
 import { BookingsService } from './bookings.service.js';
 import { BookingDto } from './dto/booking.dto.js';
@@ -33,9 +38,13 @@ export class BookingsController {
     return this.bookingsService.create(dto);
   }
 
-  // Anulacja jest akcją na istniejącej rezerwacji, ale gość identyfikuje ją kodem i e-mailem, a nie identyfikatorem. (DamianTchorzewski_72206)
+  // Anulacja jest akcją na istniejącej rezerwacji, ale gość identyfikuje ją kodem i e-mailem, a nie identyfikatorem.
+  // Ostry limit żądań utrudnia zgadywanie kodów rezerwacji. (DamianTchorzewski_72206)
   @Post('cancel')
   @HttpCode(HttpStatus.OK)
+  @Throttle({
+    default: { limit: CANCEL_RATE_LIMIT, ttl: RATE_LIMIT_WINDOW_MS },
+  })
   @ApiOperation({
     summary: 'Cancel a booking',
     description:
@@ -47,6 +56,7 @@ export class BookingsController {
     404: 'No booking matches the code and e-mail pair (BOOKING_NOT_FOUND). A wrong e-mail is not distinguished from a wrong code',
     409: 'The booking has already been cancelled (BOOKING_ALREADY_CANCELLED)',
     422: 'The stay has already started (CANCELLATION_NOT_ALLOWED)',
+    429: 'Too many cancellation attempts from one address (TOO_MANY_REQUESTS). The Retry-After header tells when to try again',
   })
   cancel(@Body() dto: CancelBookingDto): Promise<BookingDto> {
     return this.bookingsService.cancel(dto);

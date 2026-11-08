@@ -1,7 +1,8 @@
 // Dekoratory class-transformer wymagają polyfilla metadanych, więc moduł nie może zależeć od kolejności importów. (DamianTchorzewski_72206)
 import 'reflect-metadata';
-import { plainToInstance, Type } from 'class-transformer';
+import { plainToInstance, Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -14,6 +15,7 @@ import {
   validateSync,
 } from 'class-validator';
 import { INTEGRATION_API_KEYS_PATTERN } from '../common/security/api-keys.js';
+import { toBoolean } from '../common/transformers/string.transformers.js';
 
 export enum NodeEnvironment {
   Development = 'development',
@@ -40,6 +42,11 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   DATABASE_URL: string;
+
+  // Wyłączenie limitu żądań ma sens tylko lokalnie lub w testach. Domyślnie limit jest włączony. (DamianTchorzewski_72206)
+  @Transform(toBoolean)
+  @IsBoolean()
+  RATE_LIMIT_ENABLED: boolean = true;
 
   // Klucze zespołów zewnętrznych dla endpointów /integrations. Wymagane w produkcji, a bez nich nikt nie ma dostępu. (DamianTchorzewski_72206)
   @ValidateIf(

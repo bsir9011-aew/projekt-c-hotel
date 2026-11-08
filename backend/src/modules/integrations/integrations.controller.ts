@@ -5,7 +5,12 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { API_KEY_SECURITY_NAME } from '../../common/constants/api.constants.js';
+import {
+  INTEGRATION_RATE_LIMIT,
+  RATE_LIMIT_WINDOW_MS,
+} from '../../common/rate-limit/rate-limit.constants.js';
 import { ApiKeyGuard } from '../../common/security/api-key.guard.js';
 import { ApiErrorResponses } from '../../common/swagger/api-error-responses.decorator.js';
 import { BookingCodeParamDto } from '../bookings/dto/booking-code-param.dto.js';
@@ -17,6 +22,9 @@ import { IntegrationsService } from './integrations.service.js';
 // Strażnik działa przed walidacją, więc nieuwierzytelniony klient nie dowie się nic o formacie danych. (DamianTchorzewski_72206)
 @ApiTags('integrations')
 @ApiSecurity(API_KEY_SECURITY_NAME)
+@Throttle({
+  default: { limit: INTEGRATION_RATE_LIMIT, ttl: RATE_LIMIT_WINDOW_MS },
+})
 @UseGuards(ApiKeyGuard)
 @Controller('integrations')
 export class IntegrationsController {
@@ -33,6 +41,7 @@ export class IntegrationsController {
     400: 'Invalid booking code or date (VALIDATION_ERROR)',
     401: 'Missing or invalid API key (UNAUTHORIZED)',
     404: 'No booking with this code (BOOKING_NOT_FOUND)',
+    429: 'Too many requests from one address (TOO_MANY_REQUESTS). The Retry-After header tells when to try again',
   })
   verifyBooking(
     @Param() params: BookingCodeParamDto,
