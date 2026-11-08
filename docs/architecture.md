@@ -15,7 +15,8 @@ wypoczynkowych. Kontrakt REST API opisuje osobny dokument
 | ORM                | Prisma                                   | Migracje, bezpieczeństwo typów, skrypt seed.                        |
 | Walidacja          | class-validator + class-transformer      | Deklaratywna walidacja DTO na wejściu API.                          |
 | Dokumentacja API   | Swagger / OpenAPI (`@nestjs/swagger`)    | Generowana automatycznie pod `/api/docs`.                           |
-| Testy              | Jest + Supertest                         | Testy jednostkowe i e2e.                                            |
+| Testy              | Vitest + Supertest                       | Testy jednostkowe i e2e (domyślne narzędzia NestJS 12).             |
+| Analiza statyczna  | oxlint                                   | Szybki lint z regułami uwzględniającymi typy (domyślny w NestJS 12). |
 | CI                 | GitHub Actions                           | Osobne workflow dla `frontend/` i `backend/`.                       |
 | Środowisko lokalne | Docker Compose                           | Baza danych uruchamiana jedną komendą.                              |
 
@@ -29,13 +30,14 @@ projekt-c-hotel/
 ├── docs/                      # dokumentacja projektowa
 ├── frontend/                  # React + Vite
 ├── backend/                   # NestJS
-│   ├── prisma/                # schemat bazy i migracje
+│   ├── prisma/                # schemat bazy i migracje (seed.ts dojdzie w HOTEL-6)
 │   ├── src/
-│   │   ├── common/            # filtry, interceptory, wspólne DTO
+│   │   ├── common/            # filtry, interceptory, wspólne DTO (dojdzie w HOTEL-10)
 │   │   ├── config/            # konfiguracja i walidacja zmiennych środowiskowych
-│   │   ├── modules/           # moduły domenowe (rooms, bookings, packages, integrations)
+│   │   ├── modules/           # moduły domenowe: na razie health, kolejne w HOTEL-6 i HOTEL-5
 │   │   ├── prisma/            # moduł dostępu do bazy danych
-│   │   └── main.ts            # bootstrap: prefiks API, CORS, walidacja, Swagger
+│   │   ├── app.setup.ts       # wspólna konfiguracja: prefiks API, CORS, walidacja, Swagger
+│   │   └── main.ts            # uruchomienie aplikacji
 │   └── test/                  # testy e2e
 ├── docker-compose.yml         # PostgreSQL dla środowiska lokalnego
 └── .env.example               # zmienne dla docker-compose
@@ -66,6 +68,7 @@ Moduły domenowe (dodawane w kolejnych zadaniach):
 
 | Moduł          | Odpowiedzialność                                         | Zadanie |
 | -------------- | -------------------------------------------------------- | ------- |
+| `health`       | Stan aplikacji i bazy danych (`/api/v1/health`)          | HOTEL-12 |
 | `rooms`        | Wyszukiwanie pokoi, szczegóły pokoju, dostępność         | HOTEL-6 |
 | `packages`     | Lista pakietów wypoczynkowych                            | HOTEL-6 |
 | `bookings`     | Tworzenie i anulowanie rezerwacji, wycena pobytu         | HOTEL-5 |
