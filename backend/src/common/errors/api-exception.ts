@@ -14,6 +14,16 @@ export class ApiException extends HttpException {
     super(message, status);
   }
 
+  // Reguła biznesowa naruszona przez dane wejściowe, np. data z przeszłości, której nie wyłapie sam DTO. (DamianTchorzewski_72206)
+  static validation(details: ErrorDetailDto[]): ApiException {
+    return new ApiException(
+      HttpStatus.BAD_REQUEST,
+      ApiErrorCode.VALIDATION_ERROR,
+      'Request validation failed.',
+      details,
+    );
+  }
+
   // Endpointy z kontraktu, które nie mają jeszcze implementacji. (DamianTchorzewski_72206)
   static notImplemented(): ApiException {
     return new ApiException(
