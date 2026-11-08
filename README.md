@@ -39,8 +39,12 @@ Wymagania: Node.js 22 lub nowszy oraz Docker z Docker Compose.
    npm ci
    npx prisma generate
    npx prisma migrate deploy
+   npm run db:seed
    npm run start:dev
    ```
+
+   `npm run db:seed` wypełnia bazę danymi demonstracyjnymi: 10 aktywnych pokoi (w tym trzy
+   z prototypu frontendu), 3 aktywne pakiety i 3 rezerwacje. Można go uruchamiać wielokrotnie.
 
 3. Uruchom frontend (w osobnym terminalu):
 
@@ -64,9 +68,18 @@ cd backend
 npm run lint
 npm test
 npm run test:e2e
+npm run test:integration
 ```
 
-Testy e2e używają atrapy bazy danych, więc nie wymagają uruchomionego PostgreSQL.
+| Polecenie                 | Co sprawdza                                         | Wymaga bazy |
+| ------------------------- | --------------------------------------------------- | ----------- |
+| `npm test`                | Testy jednostkowe: logika, wycena, daty, DTO        | nie         |
+| `npm run test:e2e`        | Walidacja żądań, format błędów, CORS, kontrakt API  | nie (atrapa) |
+| `npm run test:integration`| Cała aplikacja na prawdziwym PostgreSQL             | tak         |
+
+Testy integracyjne działają na osobnej bazie `hotel_c_test`, którą tworzą i migrują same.
+Odmówią uruchomienia na bazie, której nazwa nie kończy się na `_test`, więc nie ruszą danych deweloperskich.
+Wymagają działającego kontenera z bazą (`docker compose up -d`).
 
 Kontrakt API jest zapisany w `docs/openapi.json`, a test e2e pilnuje, żeby plik był zgodny z kodem.
 Po świadomej zmianie DTO lub endpointów odśwież go poleceniem:

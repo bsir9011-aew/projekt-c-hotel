@@ -9,12 +9,16 @@ D – vouchery) komunikują się z backendem hotelu. Powstał w zadaniu HOTEL-10
 | Plik OpenAPI 3.1        | [`docs/openapi.json`](openapi.json), zawsze zgodny z kodem (test w CI) |
 | Interaktywna dokumentacja | `http://localhost:3000/api/docs` (Swagger UI)                      |
 
-> **Status implementacji:** kontrakt jest gotowy, ale wszystkie endpointy
-> biznesowe zwracają na razie `501 NOT_IMPLEMENTED`. Logikę dodają zadania
-> HOTEL-6 (pokoje, pakiety) i HOTEL-5 (rezerwacje, integracje). Działa
-> `GET /api/v1/health`. Walidacja żądań i format błędów działają już teraz.
-> Sprawdzanie klucza API w `/integrations/*` (`401`) zacznie działać razem
-> z endpointem weryfikacji w HOTEL-5.
+> **Status implementacji:**
+>
+> | Endpointy                                              | Stan                                |
+> | ------------------------------------------------------ | ----------------------------------- |
+> | `GET /health`, `GET /rooms`, `GET /rooms/{id}`, `GET /packages` | działają (HOTEL-6)         |
+> | `POST /bookings`, `POST /bookings/cancel`, weryfikacja pobytu   | `501 NOT_IMPLEMENTED` (HOTEL-5) |
+>
+> Walidacja żądań i format błędów działają we wszystkich endpointach. Sprawdzanie
+> klucza API w `/integrations/*` (`401`) zacznie działać razem z endpointem
+> weryfikacji w HOTEL-5. Dane demonstracyjne wczytuje `npm run db:seed`.
 
 ## 1. Zasady ogólne
 
