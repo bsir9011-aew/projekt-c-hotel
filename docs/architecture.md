@@ -303,10 +303,11 @@ Cena pakietu nie zależy od liczby gości (założenie do potwierdzenia).
 
 ## 8. Uruchomienie lokalne
 
-Wymagania: Node.js 22 lub nowszy, Docker z Docker Compose.
+Wymagania: Git, Node.js 22.12 lub nowszy, Docker z Docker Compose (uruchomiony).
 
-Całe środowisko uruchamiają dwa polecenia z katalogu głównego. Pierwsze wykonuje się raz na nowej maszynie
-(tworzy pliki `.env`, uruchamia bazę, instaluje zależności, stosuje migracje i wczytuje dane demonstracyjne):
+Całe środowisko uruchamiają dwa polecenia z katalogu głównego. Pierwsze wykonuje się raz na nowej maszynie.
+Tworzy pliki `.env`, uruchamia bazę, instaluje zależności backendu i frontendu (osobne `npm ci` w `backend/`
+i `frontend/`, więc nie trzeba robić `npm install` ręcznie), stosuje migracje i wczytuje dane demonstracyjne:
 
 ```bash
 npm run setup

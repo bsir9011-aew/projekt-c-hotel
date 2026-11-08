@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import {
   BACKEND,
   ensureDockerRunning,
@@ -20,10 +20,11 @@ const READY_TIMEOUT_MS = 90_000;
 
 ensureNodeVersion();
 
+// Komunikat wskazuje, w którym projekcie brakuje zależności, bo backend i frontend instalują się osobno. (DamianTchorzewski_72206)
 for (const directory of [BACKEND, FRONTEND]) {
   if (!existsSync(resolve(directory, 'node_modules'))) {
     fail(
-      'Dependencies are not installed yet. Run "npm run setup" once, then "npm start".',
+      `Dependencies of ${basename(directory)}/ are not installed yet. Run "npm run setup" once (it installs both backend/ and frontend/), then "npm start".`,
     );
   }
 }
