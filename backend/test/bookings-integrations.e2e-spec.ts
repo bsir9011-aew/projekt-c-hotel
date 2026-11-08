@@ -108,16 +108,7 @@ describe('Bookings and integrations contract (e2e)', () => {
     });
   });
 
-  // Poniższe testy sprawdzają szkielety kontraktu. Zastąpią je testy logiki w zadaniu HOTEL-5. (DamianTchorzewski_72206)
-  it('POST /bookings/cancel answers 501 for a valid request until it is implemented', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/api/v1/bookings/cancel')
-      .send({ bookingCode: 'HTL-2026-X89B', email: 'jan.kowalski@example.com' })
-      .expect(501);
-
-    expect(response.body).toMatchObject({ code: 'NOT_IMPLEMENTED' });
-  });
-
+  // Poniższy test sprawdza szkielet kontraktu. Zastąpi go test logiki w kolejnym kroku zadania HOTEL-5. (DamianTchorzewski_72206)
   it('GET /integrations/bookings/:code/verification answers 501 until it is implemented', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/v1/integrations/bookings/HTL-2026-X89B/verification')
