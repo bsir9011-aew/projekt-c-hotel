@@ -389,6 +389,9 @@ Dane demonstracyjne w HOTEL-6 będą zawierały trzy pokoje z obecnego mocka
 
 ## 5. Integracje z zespołami
 
+> **Status:** decyzja o integracji z zespołami A, B i D jest odłożona. Poniższy opis dokumentuje to, co jest
+> gotowe po naszej stronie, a nie uzgodniony kontrakt z zespołami.
+
 | Zespół            | Co otrzymuje od nas                                           | Co musimy uzgodnić                                                     |
 | ----------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | A – masaże        | endpoint weryfikacji pobytu (3.6), kody usług w pakietach     | klucz API, lista kodów usług (np. `MASSAGE_RELAX_60`)                  |

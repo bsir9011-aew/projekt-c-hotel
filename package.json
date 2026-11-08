@@ -1,0 +1,20 @@
+{
+  "name": "projekt-c-hotel",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Hotel C: skrypty pomocnicze do uruchamiania całego projektu lokalnie",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "start": "node scripts/dev.mjs",
+    "db:up": "docker compose up -d --wait",
+    "db:stop": "docker compose stop",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
+    "test": "npm --prefix backend test && npm --prefix frontend test",
+    "test:integration": "npm --prefix backend run test:integration",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+  }
+}

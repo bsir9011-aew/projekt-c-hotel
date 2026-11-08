@@ -22,7 +22,38 @@ i voucherów.
 
 ## Uruchomienie lokalne
 
-Wymagania: Node.js 22 lub nowszy oraz Docker z Docker Compose.
+Wymagania: Node.js 22 lub nowszy, Git oraz Docker (na Windowsie Docker Desktop, który musi być uruchomiony).
+
+### Szybki start (zalecany)
+
+Raz na nowej maszynie:
+
+```bash
+npm run setup
+```
+
+Potem za każdym razem:
+
+```bash
+npm start
+```
+
+`npm run setup` tworzy pliki `.env`, uruchamia bazę, instaluje zależności, stosuje migracje i wczytuje dane
+demonstracyjne. Można go bezpiecznie powtórzyć, np. po pobraniu nowych zależności. `npm start` uruchamia bazę,
+backend i frontend jednym poleceniem, a logi obu pokazuje z prefiksami `[api]` i `[web]`. Zatrzymanie: `Ctrl+C`.
+Baza działa dalej i zatrzymasz ją poleceniem `npm run db:stop`.
+
+| Polecenie (w katalogu głównym) | Co robi                                                     |
+| ------------------------------ | ----------------------------------------------------------- |
+| `npm run setup`                | pierwsza konfiguracja projektu                              |
+| `npm start`                    | baza + backend + frontend w trybie developerskim            |
+| `npm run db:up` / `db:stop`    | uruchamia / zatrzymuje samą bazę                            |
+| `npm test`                     | testy jednostkowe backendu i frontendu                      |
+| `npm run test:integration`     | testy backendu na prawdziwym PostgreSQL                     |
+| `npm run lint`                 | analiza kodu backendu i frontendu                           |
+| `npm run build`                | kompilacja backendu i frontendu                             |
+
+### Ręcznie, krok po kroku
 
 1. Uruchom bazę danych:
 
@@ -60,6 +91,32 @@ Po starcie dostępne są:
 - Dokumentacja Swagger: <http://localhost:3000/api/docs>
 - Stan aplikacji i bazy: <http://localhost:3000/api/v1/health>
 - Frontend: <http://localhost:5173>
+
+## Najczęstsze problemy
+
+**„Docker is not running or does not respond".** Uruchom Docker Desktop i poczekaj, aż pokaże, że działa.
+
+**Docker Desktop kończy się błędem `initializing Inference manager … dockerInference … The file cannot be accessed by the system`**
+(Windows, po nieczystym zamknięciu Dockera). Zostają wtedy uszkodzone pliki gniazd, których Windows nie pozwala usunąć,
+ale pozwala zmienić nazwę ich katalogów. Zamknij Docker Desktop (ikona przy zegarze, „Quit Docker Desktop"), a w
+PowerShellu wykonaj:
+
+```powershell
+Rename-Item "$env:LOCALAPPDATA\Docker\run" "run.stale"
+```
+
+```powershell
+Rename-Item "$env:LOCALAPPDATA\docker-secrets-engine" "docker-secrets-engine.stale"
+```
+
+Jeśli któryś katalog nie istnieje, pomiń to polecenie, a jeśli nazwa `.stale` jest już zajęta, użyj innej. Potem
+uruchom Docker Desktop ponownie. Aby tego uniknąć, zamykaj Docker Desktop z menu przy zegarze, a nie przez
+Menedżera zadań.
+
+**Port 3000 lub 5173 jest zajęty.** Zamknij poprzednio uruchomiony projekt. Port API zmienisz zmienną `PORT` w
+`backend/.env`.
+
+**Brak pliku `backend/.env` lub brak zależności.** Uruchom `npm run setup`.
 
 ## Dane demonstracyjne do ręcznych testów
 

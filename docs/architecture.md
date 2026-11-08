@@ -88,6 +88,9 @@ Przykład: rezerwacja pokoju.
 
 ### 2.3 Integracje z zespołami A, B i D
 
+> **Status:** decyzja o integracji z zespołami A, B i D została odłożona do czasu ustaleń z zespołami.
+> Endpoint weryfikacji pobytu jest gotowy po naszej stronie, ale nie jest teraz uzgadniany ani rozwijany.
+
 | Zespół        | Kierunek wywołania     | Mechanizm                                                         | Stan                                                                 |
 | ------------- | ---------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------- |
 | A (masaże)    | zespół A → nasze API   | `GET /api/v1/integrations/bookings/{kod}/verification`, `X-API-Key` | Gotowe po naszej stronie. Do uzgodnienia: klucz i kody usług `MASSAGE_*` |
@@ -115,7 +118,7 @@ Decyzje są zaimplementowane w repozytorium. Formalne potwierdzenie przez zespó
 | 2 | Backend i sposób udostępniania API | NestJS, REST/JSON pod `/api/v1`, dokumentacja OpenAPI    | Ten sam język co frontend. Moduły, wstrzykiwanie zależności i walidacja DTO są wbudowane. Dokumentacja powstaje z kodu, więc nie może się z nim rozjechać. REST jest zrozumiały dla partnerów i testerów (Swagger, Insomnia). | Czysty Express (brak struktury), Spring Boot (inny język niż frontend), GraphQL (zbyt rozbudowany dla kilku zasobów i trudniejszy dla partnerów) |
 | 3 | System zarządzania bazą danych | PostgreSQL 16 z ORM Prisma                                  | Constraint `EXCLUDE` na zakresach dat daje gwarancję braku podwójnych rezerwacji nawet przy równoległych żądaniach. Pełne transakcje i dokładne liczby dziesiętne dla kwot. Prisma daje typowanego klienta i migracje. | MySQL i SQLite (brak takiego constraintu, ochrona tylko w aplikacji), MongoDB (brak relacyjnej integralności), TypeORM (słabsze typowanie niż klient generowany przez Prisma) |
 | 4 | Model komunikacji            | Przeglądarka → backend → baza, REST bez sesji                 | Jedna warstwa z regułami biznesowymi, której nie da się obejść z przeglądarki. Gość nie potrzebuje konta: wystarcza kod rezerwacji i e-mail.           | Bezpośredni dostęp frontendu do bazy (brak kontroli reguł), konta użytkowników i WebSocket (poza zakresem, brak potrzeby czasu rzeczywistego) |
-| 5 | Integracja z zespołami A, B, D | REST serwer-serwer z kluczem `X-API-Key` dla każdego zespołu | Prosty mechanizm, wystarczający dla kilku zaufanych systemów. Osobne klucze pozwalają wymienić jeden bez wpływu na resztę.                              | OAuth (zbyt ciężki dla 2–3 zespołów), wspólna baza (wiąże zespoły ze schematem), webhooki (brak potrzeby)               |
+| 5 | Integracja z zespołami A, B, D (odłożona) | REST serwer-serwer z kluczem `X-API-Key` dla każdego zespołu | Prosty mechanizm, wystarczający dla kilku zaufanych systemów. Osobne klucze pozwalają wymienić jeden bez wpływu na resztę.                              | OAuth (zbyt ciężki dla 2–3 zespołów), wspólna baza (wiąże zespoły ze schematem), webhooki (brak potrzeby)               |
 | 6 | Lokalne uruchamianie         | Docker Compose dla bazy, Node.js 22+ na maszynie, seed z danymi demo | Każdy dostaje tę samą wersję bazy jednym poleceniem, a kod uruchamia się szybko bez przebudowy kontenerów. Seed daje gotowe dane do testów.             | Całość w kontenerach (wolniejsza praca nad kodem), lokalnie instalowany PostgreSQL (różne wersje u członków zespołu)    |
 
 Pełna instrukcja uruchomienia: sekcja 8.
@@ -302,20 +305,21 @@ Cena pakietu nie zależy od liczby gości (założenie do potwierdzenia).
 
 Wymagania: Node.js 22 lub nowszy, Docker z Docker Compose.
 
-```bash
-# 1. Baza danych
-cp .env.example .env
-docker compose up -d
+Całe środowisko uruchamiają dwa polecenia z katalogu głównego. Pierwsze wykonuje się raz na nowej maszynie
+(tworzy pliki `.env`, uruchamia bazę, instaluje zależności, stosuje migracje i wczytuje dane demonstracyjne):
 
-# 2. Backend
-cd backend
-cp .env.example .env
-npm ci
-npx prisma generate
-npx prisma migrate deploy
-npm run db:seed
-npm run start:dev
+```bash
+npm run setup
 ```
+
+Drugie uruchamia bazę, backend i frontend naraz:
+
+```bash
+npm start
+```
+
+Skrypty są w katalogu `scripts/` i nie mają własnych zależności, więc działają zaraz po sklonowaniu repozytorium.
+Pełna lista poleceń, instrukcja ręczna i rozwiązywanie problemów z Dockerem są w [README](../README.md).
 
 Po starcie:
 
