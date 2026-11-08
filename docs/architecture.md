@@ -1,8 +1,8 @@
 # Hotel C – architektura systemu
 
-Dokument opisuje stos technologiczny, strukturę repozytorium, model danych
-oraz kluczowe reguły biznesowe systemu rezerwacji pokoi i pakietów
-wypoczynkowych. Kontrakt REST API opisuje osobny dokument
+Dokument opisuje stos technologiczny, architekturę systemu z podziałem odpowiedzialności,
+uzasadnienie decyzji, strukturę repozytorium, model danych oraz kluczowe reguły biznesowe systemu
+rezerwacji pokoi i pakietów wypoczynkowych. Kontrakt REST API opisuje osobny dokument
 (`docs/api-contract.md`, zadanie HOTEL-10).
 
 ## 1. Stos technologiczny
@@ -15,12 +15,112 @@ wypoczynkowych. Kontrakt REST API opisuje osobny dokument
 | ORM                | Prisma                                   | Migracje, bezpieczeństwo typów, skrypt seed.                        |
 | Walidacja          | class-validator + class-transformer      | Deklaratywna walidacja DTO na wejściu API.                          |
 | Dokumentacja API   | Swagger / OpenAPI (`@nestjs/swagger`)    | Generowana automatycznie pod `/api/docs`.                           |
-| Testy              | Vitest + Supertest                       | Testy jednostkowe i e2e (domyślne narzędzia NestJS 12).             |
+| Testy              | Vitest + Supertest                       | Testy jednostkowe, e2e i integracyjne na prawdziwym PostgreSQL.     |
+| Bezpieczeństwo API | `@nestjs/throttler`, klucze API          | Limit żądań na adres IP i uwierzytelnianie zespołów zewnętrznych.   |
 | Analiza statyczna  | oxlint                                   | Szybki lint z regułami uwzględniającymi typy (domyślny w NestJS 12). |
 | CI                 | GitHub Actions                           | Osobne workflow dla `frontend/` i `backend/`.                       |
 | Środowisko lokalne | Docker Compose                           | Baza danych uruchamiana jedną komendą.                              |
 
-## 2. Struktura repozytorium (monorepo)
+## 2. Architektura systemu
+
+```mermaid
+flowchart LR
+    subgraph Client["Przeglądarka gościa"]
+        FE["Frontend<br/>React + TypeScript + Vite"]
+    end
+
+    subgraph Server["Serwer hotelu"]
+        API["Backend REST API<br/>NestJS, prefiks /api/v1"]
+        DOCS["Dokumentacja API<br/>Swagger UI i openapi.json"]
+        DB[("PostgreSQL 16<br/>dostęp przez Prisma")]
+    end
+
+    subgraph Partners["Zespoły zewnętrzne"]
+        A["Zespół A<br/>masaże"]
+        B["Zespół B<br/>fitness"]
+        D["Zespół D<br/>vouchery"]
+    end
+
+    FE -->|"HTTP/JSON<br/>CORS tylko dla frontendu"| API
+    API -->|"SQL: transakcje<br/>i constrainty"| DB
+    API --- DOCS
+    A -->|"weryfikacja pobytu<br/>nagłówek X-API-Key"| API
+    B -->|"weryfikacja pobytu<br/>nagłówek X-API-Key"| API
+    API -.->|"propozycja: walidacja<br/>kodu vouchera"| D
+```
+
+Linia przerywana to propozycja, której nie uzgodniono jeszcze z zespołem D. Pozostałe połączenia są
+zaimplementowane. Frontend nigdy nie łączy się z bazą ani z zespołami zewnętrznymi: cała komunikacja
+przechodzi przez backend.
+
+### 2.1 Odpowiedzialności
+
+| Komponent             | Odpowiada za                                                                                                                                  | Nie odpowiada za                                  |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Frontend              | Wyświetlanie ofert, formularze (wyszukiwania, rezerwacji, anulacji), pierwsza walidacja dla wygody użytkownika, pokazywanie błędów z API       | Cen, dostępności i reguł biznesowych, dostępu do bazy |
+| Backend               | Wszystkie reguły biznesowe (dostępność, wycena, rezerwacja, anulacja), walidacja danych, kontrakt API i jego dokumentacja, uwierzytelnianie zespołów, limity żądań | Wyglądu aplikacji                                 |
+| Baza danych           | Trwałość danych i ich integralność: klucze obce, ograniczenia `CHECK`, `EXCLUDE` blokujący podwójną rezerwację także przy równoległych żądaniach | Obliczania cen i reguł wyższego poziomu           |
+| Zespoły A i B         | Własne usługi (masaże, fitness). Pytają nas o aktywny pobyt gościa i uprawnienia z pakietu                                                    | Zapisu rezerwacji i danych osobowych gości        |
+| Zespół D              | Własne zasady vouchera. Do uzgodnienia: czy udostępnia walidację kodu i jaka zniżka z niego wynika                                            | Rezerwacji pokoi                                  |
+| CI (GitHub Actions)   | Lint, testy (w tym na prawdziwym PostgreSQL) i build przy każdym Pull Requeście                                                               | Wdrożeń (jeszcze nie skonfigurowano)              |
+
+### 2.2 Model komunikacji
+
+Frontend, backend i baza łączą się w jednym kierunku: **przeglądarka → backend → baza**.
+
+- Frontend rozmawia z backendem przez REST w formacie JSON. Serwer nie zapisuje sesji ani kont: gość
+  anuluje rezerwację kodem i adresem e-mail.
+- Backend przyjmuje żądanie w stałej kolejności: limit żądań, klucz API (tylko `/integrations/*`),
+  walidacja DTO, kontroler, serwis, Prisma, PostgreSQL. Każdy błąd wraca w jednolitym formacie z polem `code`.
+- Źródłem prawdy o API jest kontrakt (`docs/openapi.json`). Z niego frontend może wygenerować typy TypeScript,
+  a test w CI pilnuje, żeby plik był zgodny z kodem.
+- W produkcji ruch powinien iść przez HTTPS. Lokalnie używamy zwykłego HTTP.
+
+Przykład: rezerwacja pokoju.
+
+1. Gość wybiera daty, a frontend wywołuje `GET /api/v1/rooms?checkIn=…&checkOut=…&guests=…`.
+2. Backend waliduje parametry, pyta bazę o pokoje i zajęte terminy (BR-1), liczy cenę (BR-3) i odsyła listę.
+3. Gość wysyła formularz: `POST /api/v1/bookings`. Cena nie jest częścią żądania.
+4. Backend w transakcji sprawdza pokój, pojemność, pakiet i dostępność, liczy cenę i zapisuje rezerwację.
+   Gdyby dwa żądania przeszły sprawdzenie jednocześnie, constraint w bazie przepuści tylko jedno (BR-2),
+   a drugie dostanie `409 ROOM_NOT_AVAILABLE`.
+5. Odpowiedź zawiera kod rezerwacji. Gość używa go później do anulacji (`POST /api/v1/bookings/cancel`).
+
+### 2.3 Integracje z zespołami A, B i D
+
+| Zespół        | Kierunek wywołania     | Mechanizm                                                         | Stan                                                                 |
+| ------------- | ---------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------- |
+| A (masaże)    | zespół A → nasze API   | `GET /api/v1/integrations/bookings/{kod}/verification`, `X-API-Key` | Gotowe po naszej stronie. Do uzgodnienia: klucz i kody usług `MASSAGE_*` |
+| B (fitness)   | zespół B → nasze API   | jak wyżej                                                         | Gotowe po naszej stronie. Do uzgodnienia: klucz i kody usług `FITNESS_*` |
+| D (vouchery)  | nasze API → zespół D   | Obecnie `voucherCode` jest tylko zapisywany przy rezerwacji. Docelowo wywołanie serwer-serwer do API zespołu D | Wymaga uzgodnienia kontraktu z zespołem D                            |
+
+Zasady wspólne dla wszystkich integracji:
+
+- Wywołania idą tylko między serwerami, nigdy z przeglądarki, bo klucz API musi pozostać tajny.
+- Każdy zespół ma własny klucz, który można wymienić bez wpływu na pozostałych.
+- Odpowiedzi dla partnerów nie zawierają danych osobowych gości.
+- Kody usług w pakietach (`includedServices`) są stałe, bo partnerzy rozpoznają po nich usługę.
+- Zmiany kontraktu przechodzą przez Pull Request i aktualizację `docs/openapi.json`.
+
+Szczegóły i przykłady: [api-contract.md](api-contract.md), sekcje 3.6 i 5.
+
+## 3. Uzasadnienie decyzji
+
+Decyzje są zaimplementowane w repozytorium. Formalne potwierdzenie przez zespół (Paweł, zespoły A, B i D)
+śledzi tabela w [api-contract.md](api-contract.md), sekcja 7.
+
+| # | Obszar                       | Wybór                                                         | Dlaczego                                                                                                                                              | Rozważone alternatywy                                                                                                  |
+| - | ---------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1 | Frontend                     | React, TypeScript, Vite                                       | Prototyp wyszukiwarki z testami i CI już istnieje (HOTEL-7). TypeScript pozwala współdzielić typy z backendem przez kontrakt OpenAPI.                  | Angular, Vue, Next.js: brak powodu do przepisywania działającego prototypu, a renderowanie po stronie serwera nie jest potrzebne |
+| 2 | Backend i sposób udostępniania API | NestJS, REST/JSON pod `/api/v1`, dokumentacja OpenAPI    | Ten sam język co frontend. Moduły, wstrzykiwanie zależności i walidacja DTO są wbudowane. Dokumentacja powstaje z kodu, więc nie może się z nim rozjechać. REST jest zrozumiały dla partnerów i testerów (Swagger, Insomnia). | Czysty Express (brak struktury), Spring Boot (inny język niż frontend), GraphQL (zbyt rozbudowany dla kilku zasobów i trudniejszy dla partnerów) |
+| 3 | System zarządzania bazą danych | PostgreSQL 16 z ORM Prisma                                  | Constraint `EXCLUDE` na zakresach dat daje gwarancję braku podwójnych rezerwacji nawet przy równoległych żądaniach. Pełne transakcje i dokładne liczby dziesiętne dla kwot. Prisma daje typowanego klienta i migracje. | MySQL i SQLite (brak takiego constraintu, ochrona tylko w aplikacji), MongoDB (brak relacyjnej integralności), TypeORM (słabsze typowanie niż klient generowany przez Prisma) |
+| 4 | Model komunikacji            | Przeglądarka → backend → baza, REST bez sesji                 | Jedna warstwa z regułami biznesowymi, której nie da się obejść z przeglądarki. Gość nie potrzebuje konta: wystarcza kod rezerwacji i e-mail.           | Bezpośredni dostęp frontendu do bazy (brak kontroli reguł), konta użytkowników i WebSocket (poza zakresem, brak potrzeby czasu rzeczywistego) |
+| 5 | Integracja z zespołami A, B, D | REST serwer-serwer z kluczem `X-API-Key` dla każdego zespołu | Prosty mechanizm, wystarczający dla kilku zaufanych systemów. Osobne klucze pozwalają wymienić jeden bez wpływu na resztę.                              | OAuth (zbyt ciężki dla 2–3 zespołów), wspólna baza (wiąże zespoły ze schematem), webhooki (brak potrzeby)               |
+| 6 | Lokalne uruchamianie         | Docker Compose dla bazy, Node.js 22+ na maszynie, seed z danymi demo | Każdy dostaje tę samą wersję bazy jednym poleceniem, a kod uruchamia się szybko bez przebudowy kontenerów. Seed daje gotowe dane do testów.             | Całość w kontenerach (wolniejsza praca nad kodem), lokalnie instalowany PostgreSQL (różne wersje u członków zespołu)    |
+
+Pełna instrukcja uruchomienia: sekcja 8.
+
+## 4. Struktura repozytorium (monorepo)
 
 ```text
 projekt-c-hotel/
@@ -43,7 +143,7 @@ projekt-c-hotel/
 └── .env.example               # zmienne dla docker-compose
 ```
 
-## 3. Architektura backendu
+## 5. Architektura backendu
 
 Backend jest monolitem modularnym. Każdy moduł domenowy ma tę samą budowę:
 
@@ -78,7 +178,7 @@ Moduły domenowe i zadania, w których powstaje ich logika:
 | `bookings`     | Tworzenie i anulowanie rezerwacji, wycena pobytu         | gotowy (HOTEL-5) |
 | `integrations` | Endpointy dla zespołów: masaże, fitness, vouchery        | gotowy (HOTEL-5) |
 
-## 4. Model danych
+## 6. Model danych
 
 Schemat źródłowy: `backend/prisma/schema.prisma`.
 
@@ -145,7 +245,7 @@ ręcznie następujące reguły (Prisma nie potrafi ich opisać w schemacie):
 | `bookings_guests_check`   | Liczba gości musi być dodatnia.                                           |
 | `bookings_no_overlap`     | Constraint `EXCLUDE`: ten sam pokój nie może mieć dwóch potwierdzonych rezerwacji o nakładających się datach. |
 
-## 5. Reguły biznesowe
+## 7. Reguły biznesowe
 
 ### BR-1: Dostępność pokoju
 
@@ -198,7 +298,7 @@ Cena pakietu nie zależy od liczby gości (założenie do potwierdzenia).
 - Anulacja zmienia status na `CANCELLED`, zapisuje `cancelledAt`
   i zwalnia termin pokoju w wyszukiwarce.
 
-## 6. Uruchomienie lokalne
+## 8. Uruchomienie lokalne
 
 Wymagania: Node.js 22 lub nowszy, Docker z Docker Compose.
 
@@ -223,7 +323,7 @@ Po starcie:
 - Swagger: `http://localhost:3000/api/docs`
 - Stan aplikacji i bazy: `http://localhost:3000/api/v1/health`
 
-## 7. Konwencje pracy
+## 9. Konwencje pracy
 
 - Branche: `feature/HOTEL-<numer>-<krótki-opis>`.
 - Commity po angielsku, w standardzie Conventional Commits:
@@ -231,7 +331,7 @@ Po starcie:
   `docs`, `chore`, `ci` lub `test` (np. `feat: add room search endpoint`).
 - Każda zmiana trafia do `main` przez Pull Request z przechodzącym CI.
 
-## 8. Decyzje do uzgodnienia
+## 10. Decyzje do uzgodnienia
 
 Lista otwartych decyzji wraz ze statusem akceptacji przez zespoły jest prowadzona
 w jednym miejscu: [api-contract.md](api-contract.md), sekcja 6.
