@@ -15,6 +15,8 @@ export default defineConfig({
     env: {
       DATABASE_URL: TEST_DATABASE_URL,
       FRONTEND_URL: 'http://localhost:5173',
+      INTEGRATION_API_KEYS:
+        'massage:test-massage-key-0001,fitness:test-fitness-key-0002',
     },
   },
 });

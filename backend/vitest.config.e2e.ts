@@ -10,6 +10,8 @@ export default defineConfig({
     env: {
       DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
       FRONTEND_URL: 'http://localhost:5173',
+      INTEGRATION_API_KEYS:
+        'massage:test-massage-key-0001,fitness:test-fitness-key-0002',
     },
   },
 });

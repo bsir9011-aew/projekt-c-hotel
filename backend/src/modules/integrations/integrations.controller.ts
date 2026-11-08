@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiOperation,
@@ -6,15 +6,18 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { API_KEY_SECURITY_NAME } from '../../common/constants/api.constants.js';
+import { ApiKeyGuard } from '../../common/security/api-key.guard.js';
 import { ApiErrorResponses } from '../../common/swagger/api-error-responses.decorator.js';
 import { BookingCodeParamDto } from '../bookings/dto/booking-code-param.dto.js';
 import { BookingVerificationDto } from './dto/booking-verification.dto.js';
 import { VerifyBookingQueryDto } from './dto/verify-booking-query.dto.js';
 import { IntegrationsService } from './integrations.service.js';
 
-// Endpointy dla zespołów zewnętrznych mają osobny prefiks, dzięki czemu klucz API obejmuje tylko je. (DamianTchorzewski_72206)
+// Endpointy dla zespołów zewnętrznych mają osobny prefiks, dzięki czemu klucz API obejmuje tylko je.
+// Strażnik działa przed walidacją, więc nieuwierzytelniony klient nie dowie się nic o formacie danych. (DamianTchorzewski_72206)
 @ApiTags('integrations')
 @ApiSecurity(API_KEY_SECURITY_NAME)
+@UseGuards(ApiKeyGuard)
 @Controller('integrations')
 export class IntegrationsController {
   constructor(private readonly integrationsService: IntegrationsService) {}

@@ -7,10 +7,13 @@ import {
   IsNotEmpty,
   IsString,
   IsUrl,
+  Matches,
   Max,
   Min,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
+import { INTEGRATION_API_KEYS_PATTERN } from '../common/security/api-keys.js';
 
 export enum NodeEnvironment {
   Development = 'development',
@@ -37,6 +40,18 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   DATABASE_URL: string;
+
+  // Klucze zespołów zewnętrznych dla endpointów /integrations. Wymagane w produkcji, a bez nich nikt nie ma dostępu. (DamianTchorzewski_72206)
+  @ValidateIf(
+    (env: EnvironmentVariables) =>
+      env.NODE_ENV === NodeEnvironment.Production ||
+      env.INTEGRATION_API_KEYS !== undefined,
+  )
+  @Matches(INTEGRATION_API_KEYS_PATTERN, {
+    message:
+      'INTEGRATION_API_KEYS must look like name:key,name:key where every key has 16 to 128 characters',
+  })
+  INTEGRATION_API_KEYS?: string;
 }
 
 // Waliduje konfigurację przy starcie, dzięki czemu aplikacja nie uruchomi się z błędnymi ustawieniami. (DamianTchorzewski_72206)
