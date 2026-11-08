@@ -66,7 +66,7 @@ Konwencje:
 - Kod i nazwy w API są w języku angielskim.
 
 Kontrakt wszystkich modułów (endpointy, DTO, walidacja) jest gotowy od zadania HOTEL-10.
-Moduły, w których logika nie została jeszcze dodana, odpowiadają `501 NOT_IMPLEMENTED`.
+Wszystkie moduły mają zaimplementowaną logikę i testy na prawdziwej bazie danych.
 
 Moduły domenowe i zadania, w których powstaje ich logika:
 
@@ -75,8 +75,8 @@ Moduły domenowe i zadania, w których powstaje ich logika:
 | `health`       | Stan aplikacji i bazy danych (`/api/v1/health`)          | gotowy (HOTEL-12) |
 | `rooms`        | Wyszukiwanie pokoi, szczegóły pokoju, dostępność         | gotowy (HOTEL-6) |
 | `packages`     | Lista pakietów wypoczynkowych                            | gotowy (HOTEL-6) |
-| `bookings`     | Tworzenie i anulowanie rezerwacji, wycena pobytu         | HOTEL-5       |
-| `integrations` | Endpointy dla zespołów: masaże, fitness, vouchery        | HOTEL-5       |
+| `bookings`     | Tworzenie i anulowanie rezerwacji, wycena pobytu         | gotowy (HOTEL-5) |
+| `integrations` | Endpointy dla zespołów: masaże, fitness, vouchery        | gotowy (HOTEL-5) |
 
 ## 4. Model danych
 

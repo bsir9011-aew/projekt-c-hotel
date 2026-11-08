@@ -9,16 +9,9 @@ D – vouchery) komunikują się z backendem hotelu. Powstał w zadaniu HOTEL-10
 | Plik OpenAPI 3.1        | [`docs/openapi.json`](openapi.json), zawsze zgodny z kodem (test w CI) |
 | Interaktywna dokumentacja | `http://localhost:3000/api/docs` (Swagger UI)                      |
 
-> **Status implementacji:**
->
-> | Endpointy                                              | Stan                                |
-> | ------------------------------------------------------ | ----------------------------------- |
-> | `GET /health`, `GET /rooms`, `GET /rooms/{id}`, `GET /packages` | działają (HOTEL-6)         |
-> | `POST /bookings`, `POST /bookings/cancel`, weryfikacja pobytu   | `501 NOT_IMPLEMENTED` (HOTEL-5) |
->
-> Walidacja żądań i format błędów działają we wszystkich endpointach. Sprawdzanie
-> klucza API w `/integrations/*` (`401`) zacznie działać razem z endpointem
-> weryfikacji w HOTEL-5. Dane demonstracyjne wczytuje `npm run db:seed`.
+> **Status implementacji:** wszystkie endpointy z tego dokumentu są zaimplementowane
+> i przetestowane na prawdziwej bazie PostgreSQL (HOTEL-6 i HOTEL-5). Dane
+> demonstracyjne do ręcznych testów wczytuje `npm run db:seed`.
 
 ## 1. Zasady ogólne
 
@@ -133,7 +126,6 @@ Każdy błąd, także nieoczekiwany, ma ten sam kształt:
 | 422    | `CANCELLATION_NOT_ALLOWED`   | Pobyt już się rozpoczął                                              |
 | 429    | `TOO_MANY_REQUESTS`          | Przekroczony limit żądań z jednego adresu (patrz „Limity żądań")     |
 | 500    | `INTERNAL_ERROR`             | Nieoczekiwany błąd serwera                                           |
-| 501    | `NOT_IMPLEMENTED`            | Endpoint z kontraktu bez implementacji (tymczasowo)                  |
 | 503    | `SERVICE_UNAVAILABLE`        | Baza danych jest niedostępna                                         |
 
 ## 3. Endpointy
@@ -409,6 +401,7 @@ usługę. Zmiana kodu wymaga uzgodnienia z zespołem.
 ## 6. Założenia i decyzje do akceptacji
 
 Wszystkie poniższe punkty to propozycje. Zostają w kontrakcie, dopóki nikt nie zgłosi sprzeciwu.
+Są już zaimplementowane dokładnie tak, jak opisano, więc zmiana któregokolwiek z nich oznacza zmianę kodu i testów.
 
 | #  | Temat                         | Propozycja                                                                          | Kto potwierdza     |
 | -- | ----------------------------- | ----------------------------------------------------------------------------------- | ------------------ |

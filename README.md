@@ -61,6 +61,21 @@ Po starcie dostępne są:
 - Stan aplikacji i bazy: <http://localhost:3000/api/v1/health>
 - Frontend: <http://localhost:5173>
 
+## Dane demonstracyjne do ręcznych testów
+
+Po `npm run db:seed` w bazie są rezerwacje, na których można od razu sprawdzić anulację i weryfikację pobytu
+(w Swaggerze pod `/api/docs`, w Insomnii lub przez `curl`):
+
+| Kod rezerwacji   | E-mail                  | Co pokazuje                                                              |
+| ---------------- | ----------------------- | ------------------------------------------------------------------------ |
+| `HTL-2026-DM2A`  | `anna.demo@example.com` | przyszła rezerwacja (za 14 dni), można ją anulować                       |
+| `HTL-2026-DM3B`  | `piotr.demo@example.com`| przyszła rezerwacja z pakietem All-Inclusive (za 20 dni)                 |
+| `HTL-2026-DM4C`  | `ewa.demo@example.com`  | trwający pobyt z pakietem Fitness: weryfikacja `isActive: true`, anulacja zwraca 422 |
+
+Endpointy `/integrations/*` wymagają nagłówka `X-API-Key`. Lokalnie działają klucze z `backend/.env.example`
+(`dev-massage-key-0001` i `dev-fitness-key-0002`). Działanie klucza opisuje sekcja „Klucz API" w
+[kontrakcie API](docs/api-contract.md).
+
 ## Testy
 
 ```bash
