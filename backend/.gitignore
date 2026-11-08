@@ -23,3 +23,6 @@ npm-debug.log*
 
 # Cache kompilacji przyrostowej TypeScript. (DamianTchorzewski_72206)
 *.tsbuildinfo
+
+# Klient Prisma jest generowany poleceniem prisma generate. (DamianTchorzewski_72206)
+/src/generated
