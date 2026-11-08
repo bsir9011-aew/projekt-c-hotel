@@ -1,6 +1,7 @@
 import {
   ArgumentsHost,
   BadRequestException,
+  HttpException,
   HttpStatus,
   Logger,
   NotFoundException,
@@ -111,8 +112,10 @@ describe('ApiExceptionFilter', () => {
     expect(body.message).toBe('Room ?x=1 was not found');
   });
 
-  it('creates a 501 ApiException for endpoints without implementation', () => {
-    const body = run(ApiException.notImplemented());
+  it('derives the code from the status of an HttpException that is not an ApiException', () => {
+    const body = run(
+      new HttpException('Not ready', HttpStatus.NOT_IMPLEMENTED),
+    );
 
     expect(body).toMatchObject({ statusCode: 501, code: 'NOT_IMPLEMENTED' });
   });

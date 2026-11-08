@@ -101,6 +101,33 @@ describe('Seed (integration, real PostgreSQL)', () => {
     expect(statusOf('102')).toBe('AVAILABLE');
   });
 
+  // Rezerwacje demo opisane w README muszą naprawdę działać, bo służą do ręcznych testów w Swaggerze i Insomnii. (DamianTchorzewski_72206)
+  it('lets a partner verify the demo stay that is in progress', async () => {
+    await seedDatabase(ctx.prisma);
+
+    const response = await request(ctx.app.getHttpServer())
+      .get('/api/v1/integrations/bookings/HTL-2026-DM4C/verification')
+      .set('X-API-Key', 'test-fitness-key-0002')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      isActive: true,
+      status: 'CONFIRMED',
+      package: { includedServices: ['FITNESS_DAY_PASS', 'FITNESS_TRAINER_30'] },
+    });
+  });
+
+  it('lets a guest cancel a future demo booking but not the one in progress', async () => {
+    await seedDatabase(ctx.prisma);
+    const cancel = (bookingCode: string, email: string) =>
+      request(ctx.app.getHttpServer())
+        .post('/api/v1/bookings/cancel')
+        .send({ bookingCode, email });
+
+    await cancel('HTL-2026-DM2A', 'anna.demo@example.com').expect(200);
+    await cancel('HTL-2026-DM4C', 'ewa.demo@example.com').expect(422);
+  });
+
   it('includes a stay that is already in progress', async () => {
     await seedDatabase(ctx.prisma);
     const today = todayInHotel();

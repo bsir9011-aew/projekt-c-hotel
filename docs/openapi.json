@@ -369,6 +369,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too many cancellation attempts from one address (TOO_MANY_REQUESTS). The Retry-After header tells when to try again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Cancel a booking",
@@ -437,6 +447,16 @@
           },
           "404": {
             "description": "No booking with this code (BOOKING_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests from one address (TOO_MANY_REQUESTS). The Retry-After header tells when to try again",
             "content": {
               "application/json": {
                 "schema": {

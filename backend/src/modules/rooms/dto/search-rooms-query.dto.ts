@@ -9,14 +9,8 @@ import {
   Min,
 } from 'class-validator';
 import { MAX_GUESTS_PER_BOOKING } from '../../../common/constants/booking.constants.js';
+import { toBoolean } from '../../../common/transformers/string.transformers.js';
 import { StayDatesQueryDto } from './stay-dates-query.dto.js';
-
-// Parametry zapytania są tekstem, więc "true" i "false" trzeba zamienić na wartości logiczne. (DamianTchorzewski_72206)
-function toBoolean({ value }: { value: unknown }): unknown {
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  return value;
-}
 
 export class SearchRoomsQueryDto extends StayDatesQueryDto {
   @ApiPropertyOptional({

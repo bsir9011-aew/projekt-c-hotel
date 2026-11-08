@@ -13,6 +13,42 @@ describe('validateEnv', () => {
     expect(env.FRONTEND_URL).toBe('http://localhost:5173');
   });
 
+  describe('INTEGRATION_API_KEYS', () => {
+    const keys = 'massage:dev-massage-key-0001,fitness:dev-fitness-key-0002';
+
+    it('is optional outside production', () => {
+      expect(() => validateEnv(validConfig)).not.toThrow();
+    });
+
+    it('is required in production', () => {
+      expect(() =>
+        validateEnv({ ...validConfig, NODE_ENV: 'production' }),
+      ).toThrow(/INTEGRATION_API_KEYS/);
+      expect(() =>
+        validateEnv({
+          ...validConfig,
+          NODE_ENV: 'production',
+          INTEGRATION_API_KEYS: keys,
+        }),
+      ).not.toThrow();
+    });
+
+    it('accepts a well formed value', () => {
+      const env = validateEnv({ ...validConfig, INTEGRATION_API_KEYS: keys });
+
+      expect(env.INTEGRATION_API_KEYS).toBe(keys);
+    });
+
+    it.each(['massage:short', 'no-separator', 'Massage:dev-massage-key-0001'])(
+      'rejects the malformed value %s',
+      (value) => {
+        expect(() =>
+          validateEnv({ ...validConfig, INTEGRATION_API_KEYS: value }),
+        ).toThrow(/INTEGRATION_API_KEYS/);
+      },
+    );
+  });
+
   it('converts PORT from text to a number', () => {
     const env = validateEnv({ ...validConfig, PORT: '4000' });
 

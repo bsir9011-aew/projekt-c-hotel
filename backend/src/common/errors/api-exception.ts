@@ -23,13 +23,4 @@ export class ApiException extends HttpException {
       details,
     );
   }
-
-  // Endpointy z kontraktu, które nie mają jeszcze implementacji. (DamianTchorzewski_72206)
-  static notImplemented(): ApiException {
-    return new ApiException(
-      HttpStatus.NOT_IMPLEMENTED,
-      ApiErrorCode.NOT_IMPLEMENTED,
-      'This endpoint is not implemented yet.',
-    );
-  }
 }

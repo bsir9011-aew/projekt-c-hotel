@@ -61,42 +61,50 @@ describe('Bookings and integrations contract (e2e)', () => {
     });
   });
 
-  it('GET /integrations/bookings/:code/verification rejects a malformed code', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/v1/integrations/bookings/abc/verification')
-      .expect(400);
+  describe('GET /integrations/bookings/:code/verification', () => {
+    // Klucz zgodny z INTEGRATION_API_KEYS w vitest.config.e2e.ts. (DamianTchorzewski_72206)
+    const API_KEY = 'test-massage-key-0001';
 
-    expect(response.body).toMatchObject({
-      code: 'VALIDATION_ERROR',
-      details: [{ field: 'bookingCode' }],
+    it('answers 401 without an API key, even for a malformed code', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/integrations/bookings/abc/verification')
+        .expect(401);
+
+      expect(response.body).toMatchObject({
+        statusCode: 401,
+        code: 'UNAUTHORIZED',
+        details: [],
+      });
     });
-  });
 
-  it('GET /integrations/bookings/:code/verification rejects an invalid date', async () => {
-    const response = await request(app.getHttpServer())
-      .get(
-        '/api/v1/integrations/bookings/HTL-2026-X89B/verification?date=2026-02-30',
-      )
-      .expect(400);
+    it('answers 401 for a wrong API key', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/integrations/bookings/HTL-2026-X89B/verification')
+        .set('X-API-Key', 'definitely-wrong-key-0000')
+        .expect(401);
+    });
 
-    expect(response.body).toMatchObject({ details: [{ field: 'date' }] });
-  });
+    it('rejects a malformed code once the key is accepted', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/integrations/bookings/abc/verification')
+        .set('X-API-Key', API_KEY)
+        .expect(400);
 
-  // Poniższe testy sprawdzają szkielety kontraktu. Zastąpią je testy logiki w zadaniu HOTEL-5. (DamianTchorzewski_72206)
-  it('POST /bookings/cancel answers 501 for a valid request until it is implemented', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/api/v1/bookings/cancel')
-      .send({ bookingCode: 'HTL-2026-X89B', email: 'jan.kowalski@example.com' })
-      .expect(501);
+      expect(response.body).toMatchObject({
+        code: 'VALIDATION_ERROR',
+        details: [{ field: 'bookingCode' }],
+      });
+    });
 
-    expect(response.body).toMatchObject({ code: 'NOT_IMPLEMENTED' });
-  });
+    it('rejects an invalid date once the key is accepted', async () => {
+      const response = await request(app.getHttpServer())
+        .get(
+          '/api/v1/integrations/bookings/HTL-2026-X89B/verification?date=2026-02-30',
+        )
+        .set('X-API-Key', API_KEY)
+        .expect(400);
 
-  it('GET /integrations/bookings/:code/verification answers 501 until it is implemented', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/v1/integrations/bookings/HTL-2026-X89B/verification')
-      .expect(501);
-
-    expect(response.body).toMatchObject({ code: 'NOT_IMPLEMENTED' });
+      expect(response.body).toMatchObject({ details: [{ field: 'date' }] });
+    });
   });
 });

@@ -9,16 +9,9 @@ D – vouchery) komunikują się z backendem hotelu. Powstał w zadaniu HOTEL-10
 | Plik OpenAPI 3.1        | [`docs/openapi.json`](openapi.json), zawsze zgodny z kodem (test w CI) |
 | Interaktywna dokumentacja | `http://localhost:3000/api/docs` (Swagger UI)                      |
 
-> **Status implementacji:**
->
-> | Endpointy                                              | Stan                                |
-> | ------------------------------------------------------ | ----------------------------------- |
-> | `GET /health`, `GET /rooms`, `GET /rooms/{id}`, `GET /packages` | działają (HOTEL-6)         |
-> | `POST /bookings`, `POST /bookings/cancel`, weryfikacja pobytu   | `501 NOT_IMPLEMENTED` (HOTEL-5) |
->
-> Walidacja żądań i format błędów działają we wszystkich endpointach. Sprawdzanie
-> klucza API w `/integrations/*` (`401`) zacznie działać razem z endpointem
-> weryfikacji w HOTEL-5. Dane demonstracyjne wczytuje `npm run db:seed`.
+> **Status implementacji:** wszystkie endpointy z tego dokumentu są zaimplementowane
+> i przetestowane na prawdziwej bazie PostgreSQL (HOTEL-6 i HOTEL-5). Dane
+> demonstracyjne do ręcznych testów wczytuje `npm run db:seed`.
 
 ## 1. Zasady ogólne
 
@@ -48,6 +41,39 @@ D – vouchery) komunikują się z backendem hotelu. Powstał w zadaniu HOTEL-10
   komunikat o zakresie.
 - Teksty (imiona, e-mail, telefon, kod vouchera, powód anulacji) są przycinane z białych znaków.
   Kod rezerwacji nie rozróżnia wielkości liter.
+
+### Limity żądań
+
+Każdy adres IP ma ograniczoną liczbę żądań na minutę, liczoną osobno dla każdego endpointu:
+
+| Endpoint                                    | Limit na minutę |
+| ------------------------------------------- | --------------- |
+| `POST /bookings/cancel`                     | 5               |
+| `GET /integrations/...`                     | 60              |
+| pozostałe                                   | 120             |
+
+- Po przekroczeniu limitu serwer odpowiada `429 TOO_MANY_REQUESTS`, a nagłówek `Retry-After` podaje
+  w sekundach, kiedy można spróbować ponownie.
+- Limit liczy każde żądanie, także błędne i bez poprawnego klucza. Dzięki temu nie da się
+  zgadywać kodów rezerwacji ani kluczy API bez ograniczeń.
+- Limit jest liczony w pamięci jednej instancji serwera. Za serwerem pośredniczącym (proxy)
+  trzeba włączyć odczyt prawdziwego adresu klienta, bo inaczej wszyscy użytkownicy wyglądają jak jeden.
+
+### Klucz API (`X-API-Key`)
+
+Endpointy `/integrations/*` są przeznaczone dla zespołów zewnętrznych (masaże, fitness), a nie dla gości.
+Klucz API to tajne hasło **programu**, a nie człowieka: pozwala serwerowi rozpoznać, który zespół pyta.
+
+- Każdy zespół dostaje własny klucz (od 16 do 128 znaków) od administratora hotelu.
+  Dzięki temu pojedynczy klucz można wymienić bez wpływu na pozostałych.
+- Klucz przekazuje się w nagłówku: `X-API-Key: <klucz>`. Nigdy w adresie URL, bo trafia on do logów.
+- Brak klucza albo zły klucz daje `401 UNAUTHORIZED`. Sprawdzenie następuje przed walidacją,
+  więc osoba bez klucza nie dowie się nic o formacie danych.
+- Wywołania powinny pochodzić z serwera danego zespołu, nigdy z przeglądarki, bo klucz byłby widoczny dla każdego.
+- Klucze są skonfigurowane po stronie serwera zmienną `INTEGRATION_API_KEYS`
+  w formacie `nazwa:klucz,nazwa:klucz` (patrz `backend/.env.example`). W produkcji zmienna jest wymagana.
+  Bez niej nikt nie ma dostępu do endpointów integracyjnych.
+- Serwer porównuje klucze w stałym czasie i nie zapisuje ich w logach.
 
 ## 2. Format błędów
 
@@ -98,8 +124,8 @@ Każdy błąd, także nieoczekiwany, ma ten sam kształt:
 | 409    | `BOOKING_ALREADY_CANCELLED`  | Rezerwacja została już anulowana                                     |
 | 422    | `GUESTS_EXCEED_CAPACITY`     | Liczba gości przekracza pojemność pokoju                             |
 | 422    | `CANCELLATION_NOT_ALLOWED`   | Pobyt już się rozpoczął                                              |
+| 429    | `TOO_MANY_REQUESTS`          | Przekroczony limit żądań z jednego adresu (patrz „Limity żądań")     |
 | 500    | `INTERNAL_ERROR`             | Nieoczekiwany błąd serwera                                           |
-| 501    | `NOT_IMPLEMENTED`            | Endpoint z kontraktu bez implementacji (tymczasowo)                  |
 | 503    | `SERVICE_UNAVAILABLE`        | Baza danych jest niedostępna                                         |
 
 ## 3. Endpointy
@@ -363,6 +389,9 @@ Dane demonstracyjne w HOTEL-6 będą zawierały trzy pokoje z obecnego mocka
 
 ## 5. Integracje z zespołami
 
+> **Status:** decyzja o integracji z zespołami A, B i D jest odłożona. Poniższy opis dokumentuje to, co jest
+> gotowe po naszej stronie, a nie uzgodniony kontrakt z zespołami.
+
 | Zespół            | Co otrzymuje od nas                                           | Co musimy uzgodnić                                                     |
 | ----------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | A – masaże        | endpoint weryfikacji pobytu (3.6), kody usług w pakietach     | klucz API, lista kodów usług (np. `MASSAGE_RELAX_60`)                  |
@@ -375,6 +404,7 @@ usługę. Zmiana kodu wymaga uzgodnienia z zespołem.
 ## 6. Założenia i decyzje do akceptacji
 
 Wszystkie poniższe punkty to propozycje. Zostają w kontrakcie, dopóki nikt nie zgłosi sprzeciwu.
+Są już zaimplementowane dokładnie tak, jak opisano, więc zmiana któregokolwiek z nich oznacza zmianę kodu i testów.
 
 | #  | Temat                         | Propozycja                                                                          | Kto potwierdza     |
 | -- | ----------------------------- | ----------------------------------------------------------------------------------- | ------------------ |
@@ -387,7 +417,7 @@ Wszystkie poniższe punkty to propozycje. Zostają w kontrakcie, dopóki nikt ni
 | 7  | Pole `isAvailable`            | Zostaje obok `status` dla wygody frontendu, choć jest z niego wyliczane             | Paweł              |
 | 8  | Ścieżka weryfikacji pobytu    | Pod `/integrations/...`, a nie `/bookings/verify/...`, aby klucz API obejmował tylko integracje | Zespoły A, B |
 | 9  | Cena pakietu a liczba gości   | Dopłata nie zależy od liczby gości                                                  | Zespół projektowy  |
-| 10 | Limit żądań                   | Planowany dla `POST /bookings/cancel` i integracji (ochrona przed zgadywaniem kodów) | Zespół projektowy |
+| 10 | Limit żądań                   | Wdrożony: anulacja 5/min, integracje 60/min, reszta 120/min na adres IP (ochrona przed zgadywaniem kodów) | Zespół projektowy |
 | 11 | Galeria zdjęć                 | Poza zakresem v1: model ma jedno zdjęcie                                            | Paweł              |
 | 12 | Telefon                       | Dowolny numer w formacie z sekcji 3.4, bez wymuszania `+48`                         | Paweł              |
 
