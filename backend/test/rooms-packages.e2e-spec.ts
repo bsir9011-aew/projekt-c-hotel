@@ -3,7 +3,7 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { createTestApp } from './create-test-app.js';
 
-describe('Rooms and packages contract (e2e)', () => {
+describe('Rooms and packages request validation (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeAll(async () => {
@@ -46,22 +46,5 @@ describe('Rooms and packages contract (e2e)', () => {
       code: 'VALIDATION_ERROR',
       details: [{ field: 'id' }],
     });
-  });
-
-  // Poniższe testy sprawdzają szkielety kontraktu. Zastąpią je testy logiki w zadaniu HOTEL-6. (DamianTchorzewski_72206)
-  it('GET /rooms answers 501 until the search is implemented', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/v1/rooms?checkIn=2026-12-01&checkOut=2026-12-04&guests=2')
-      .expect(501);
-
-    expect(response.body).toMatchObject({ code: 'NOT_IMPLEMENTED' });
-  });
-
-  it('GET /packages answers 501 until the list is implemented', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/v1/packages')
-      .expect(501);
-
-    expect(response.body).toMatchObject({ code: 'NOT_IMPLEMENTED' });
   });
 });

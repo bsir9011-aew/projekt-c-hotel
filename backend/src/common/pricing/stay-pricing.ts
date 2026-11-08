@@ -8,7 +8,7 @@ export interface PackagePricing {
 }
 
 // Kwoty liczymy na liczbach dziesiętnych, bo zwykłe liczby zmiennoprzecinkowe dają błędy (np. 0.1 + 0.2). (DamianTchorzewski_72206)
-function toMoney(value: Prisma.Decimal): number {
+export function toMoney(value: Prisma.Decimal): number {
   return value.toDecimalPlaces(2).toNumber();
 }
 
