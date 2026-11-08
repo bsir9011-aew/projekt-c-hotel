@@ -79,7 +79,7 @@ Każdy błąd, także nieoczekiwany, ma ten sam kształt:
 }
 ```
 
-- `path` nie zawiera query stringa, bo mógłby on zawierać dane osobowe.
+- Ani `path`, ani `message` nie zawierają query stringa, bo mógłby on zawierać dane osobowe.
 - Błędy `500` nie ujawniają szczegółów. Przyczyna trafia tylko do logów serwera.
 
 | Status | `code`                       | Kiedy                                                                |

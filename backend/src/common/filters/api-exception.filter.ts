@@ -93,7 +93,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const response = exception.getResponse();
 
     if (typeof response === 'string') {
-      return response;
+      return this.withoutQueryString(response);
     }
 
     const message = (response as { message?: unknown }).message;
@@ -101,6 +101,14 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return message.join('; ');
     }
 
-    return typeof message === 'string' ? message : exception.message;
+    return this.withoutQueryString(
+      typeof message === 'string' ? message : exception.message,
+    );
+  }
+
+  // Domyślny komunikat NestJS dla nieznanej ścieżki ("Cannot GET /x?a=b") zawiera query string,
+  // który może mieć dane osobowe, więc go ucinamy tak samo jak w polu path. (DamianTchorzewski_72206)
+  private withoutQueryString(message: string): string {
+    return message.replace(/^(Cannot [A-Z]+ [^?\s]*)\?\S*/, '$1');
   }
 }

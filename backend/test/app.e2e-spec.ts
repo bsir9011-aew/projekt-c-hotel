@@ -61,6 +61,7 @@ describe('Application (e2e)', () => {
     });
     // Query string nie może trafić do odpowiedzi, bo może zawierać dane osobowe. (DamianTchorzewski_72206)
     expect(response.body.path).toBe('/api/v1/unknown');
+    expect(JSON.stringify(response.body)).not.toContain('jan@example.com');
     expect(new Date(response.body.timestamp).toString()).not.toBe(
       'Invalid Date',
     );

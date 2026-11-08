@@ -97,6 +97,20 @@ describe('ApiExceptionFilter', () => {
     expect(body.path).toBe('/api/v1/rooms');
   });
 
+  it('removes the query string from the default not found message', () => {
+    const body = run(
+      new NotFoundException('Cannot GET /api/v1/rooms?email=jan@example.com'),
+    );
+
+    expect(body.message).toBe('Cannot GET /api/v1/rooms');
+  });
+
+  it('leaves other messages unchanged', () => {
+    const body = run(new NotFoundException('Room ?x=1 was not found'));
+
+    expect(body.message).toBe('Room ?x=1 was not found');
+  });
+
   it('creates a 501 ApiException for endpoints without implementation', () => {
     const body = run(ApiException.notImplemented());
 
