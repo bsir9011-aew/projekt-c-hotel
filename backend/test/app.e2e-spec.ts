@@ -1,32 +1,13 @@
 import { INestApplication, Logger } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
-import { AppModule } from '../src/app.module.js';
-import { setupApp } from '../src/app.setup.js';
-import { PrismaService } from '../src/prisma/prisma.service.js';
+import { createTestApp, prismaMock } from './create-test-app.js';
 
 describe('Application (e2e)', () => {
   let app: INestApplication<App>;
 
-  // Baza jest podstawiona atrapą, więc testy nie wymagają działającego PostgreSQL. (DamianTchorzewski_72206)
-  const prismaMock = {
-    $queryRaw: vi.fn(),
-    $connect: vi.fn(),
-    $disconnect: vi.fn(),
-  };
-
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue(prismaMock)
-      .compile();
-
-    app = moduleRef.createNestApplication();
-    setupApp(app);
-    await app.init();
+    app = await createTestApp();
   });
 
   beforeEach(() => {
