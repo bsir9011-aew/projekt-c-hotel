@@ -107,14 +107,4 @@ describe('Bookings and integrations contract (e2e)', () => {
       expect(response.body).toMatchObject({ details: [{ field: 'date' }] });
     });
   });
-
-  // Poniższy test sprawdza szkielet kontraktu. Zastąpi go test logiki w kolejnym kroku zadania HOTEL-5. (DamianTchorzewski_72206)
-  it('GET /integrations/bookings/:code/verification answers 501 until it is implemented', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/v1/integrations/bookings/HTL-2026-X89B/verification')
-      .set('X-API-Key', 'test-massage-key-0001')
-      .expect(501);
-
-    expect(response.body).toMatchObject({ code: 'NOT_IMPLEMENTED' });
-  });
 });
