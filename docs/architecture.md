@@ -204,6 +204,7 @@ docker compose up -d
 cd backend
 cp .env.example .env
 npm ci
+npx prisma generate
 npx prisma migrate deploy
 npm run start:dev
 ```
@@ -217,7 +218,9 @@ Po starcie:
 ## 7. Konwencje pracy
 
 - Branche: `feature/HOTEL-<numer>-<krótki-opis>`.
-- Commity po angielsku, w formacie `HOTEL-<numer>: <imperative summary>`.
+- Commity po angielsku, w standardzie Conventional Commits:
+  `<typ>: <krótki opis w trybie rozkazującym>`, gdzie typ to `feat`, `fix`,
+  `docs`, `chore`, `ci` lub `test` (np. `feat: add room search endpoint`).
 - Każda zmiana trafia do `main` przez Pull Request z przechodzącym CI.
 
 ## 8. Decyzje do uzgodnienia (HOTEL-10)
