@@ -27,12 +27,12 @@ projekt-c-hotel/
 ├── .github/workflows/
 │   ├── frontend-ci.yml        # lint, testy i build frontendu
 │   └── backend-ci.yml         # lint, testy i build backendu
-├── docs/                      # dokumentacja projektowa
+├── docs/                      # dokumentacja: architektura, kontrakt API, openapi.json
 ├── frontend/                  # React + Vite
 ├── backend/                   # NestJS
 │   ├── prisma/                # schemat bazy i migracje (seed.ts dojdzie w HOTEL-6)
 │   ├── src/
-│   │   ├── common/            # filtry, interceptory, wspólne DTO (dojdzie w HOTEL-10)
+│   │   ├── common/            # format błędów, filtr wyjątków, walidatory, stałe
 │   │   ├── config/            # konfiguracja i walidacja zmiennych środowiskowych
 │   │   ├── modules/           # moduły domenowe: na razie health, kolejne w HOTEL-6 i HOTEL-5
 │   │   ├── prisma/            # moduł dostępu do bazy danych
@@ -60,19 +60,23 @@ Konwencje:
 
 - Wszystkie endpointy mają prefiks `/api/v1`.
 - Dokumentacja Swagger jest dostępna pod `/api/docs`.
-- Dane wejściowe są walidowane globalnym `ValidationPipe`
-  (`whitelist`, `forbidNonWhitelisted`, `transform`).
+- Dane wejściowe są walidowane globalnym `ValidationPipe` (nieznane pola są odrzucane,
+  jeden komunikat na pole, konwersja na typy z DTO).
+- Każdy błąd ma jednolity format z polem `code` (patrz [api-contract.md](api-contract.md)).
 - Kod i nazwy w API są w języku angielskim.
 
-Moduły domenowe (dodawane w kolejnych zadaniach):
+Kontrakt wszystkich modułów (endpointy, DTO, walidacja) jest gotowy od zadania HOTEL-10.
+Do czasu implementacji logiki moduły biznesowe odpowiadają `501 NOT_IMPLEMENTED`.
 
-| Moduł          | Odpowiedzialność                                         | Zadanie |
-| -------------- | -------------------------------------------------------- | ------- |
-| `health`       | Stan aplikacji i bazy danych (`/api/v1/health`)          | HOTEL-12 |
-| `rooms`        | Wyszukiwanie pokoi, szczegóły pokoju, dostępność         | HOTEL-6 |
-| `packages`     | Lista pakietów wypoczynkowych                            | HOTEL-6 |
-| `bookings`     | Tworzenie i anulowanie rezerwacji, wycena pobytu         | HOTEL-5 |
-| `integrations` | Endpointy dla zespołów: masaże, fitness, vouchery        | HOTEL-5 |
+Moduły domenowe i zadania, w których powstaje ich logika:
+
+| Moduł          | Odpowiedzialność                                         | Implementacja |
+| -------------- | -------------------------------------------------------- | ------------- |
+| `health`       | Stan aplikacji i bazy danych (`/api/v1/health`)          | gotowy (HOTEL-12) |
+| `rooms`        | Wyszukiwanie pokoi, szczegóły pokoju, dostępność         | HOTEL-6       |
+| `packages`     | Lista pakietów wypoczynkowych                            | HOTEL-6       |
+| `bookings`     | Tworzenie i anulowanie rezerwacji, wycena pobytu         | HOTEL-5       |
+| `integrations` | Endpointy dla zespołów: masaże, fitness, vouchery        | HOTEL-5       |
 
 ## 4. Model danych
 
@@ -226,12 +230,7 @@ Po starcie:
   `docs`, `chore`, `ci` lub `test` (np. `feat: add room search endpoint`).
 - Każda zmiana trafia do `main` przez Pull Request z przechodzącym CI.
 
-## 8. Decyzje do uzgodnienia (HOTEL-10)
+## 8. Decyzje do uzgodnienia
 
-| Temat                       | Propozycja                                                           |
-| --------------------------- | -------------------------------------------------------------------- |
-| Format kwot w JSON          | Liczba (`number`) z dwoma miejscami po przecinku.                    |
-| Semantyka `voucherCode`     | W MVP tylko zapisywany przy rezerwacji; zniżki do ustalenia z grupą Vouchery. |
-| Autoryzacja integracji      | Wspólny klucz w nagłówku `X-API-Key` dla zespołów zewnętrznych.      |
-| Status `COMPLETED`          | Do decyzji: usunąć albo wyliczać z dat. Brak procesu, który go ustawia. |
-| Format błędów API           | Jednolity obiekt `statusCode`, `error`, `message`, `details[]`.      |
+Lista otwartych decyzji wraz ze statusem akceptacji przez zespoły jest prowadzona
+w jednym miejscu: [api-contract.md](api-contract.md), sekcja 6.

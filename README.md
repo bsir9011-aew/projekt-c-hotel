@@ -17,6 +17,8 @@ i voucherów.
 ## Dokumentacja
 
 - [Architektura, model danych i reguły biznesowe](docs/architecture.md)
+- [Kontrakt REST API: endpointy, błędy, decyzje do akceptacji](docs/api-contract.md)
+- [Kontrakt w formacie OpenAPI](docs/openapi.json) (to samo co Swagger pod `/api/docs`)
 
 ## Uruchomienie lokalne
 
@@ -65,3 +67,11 @@ npm run test:e2e
 ```
 
 Testy e2e używają atrapy bazy danych, więc nie wymagają uruchomionego PostgreSQL.
+
+Kontrakt API jest zapisany w `docs/openapi.json`, a test e2e pilnuje, żeby plik był zgodny z kodem.
+Po świadomej zmianie DTO lub endpointów odśwież go poleceniem:
+
+```bash
+cd backend
+npm run openapi:update
+```
