@@ -21,6 +21,22 @@ jobs:
     name: Lint, Tests and Build
     runs-on: ubuntu-latest
 
+    # Baza dla testów integracyjnych. Dane logowania są takie same jak w docker-compose.yml. (DamianTchorzewski_72206)
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: hotel_user
+          POSTGRES_PASSWORD: hotel_password
+          POSTGRES_DB: hotel_c_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hotel_user -d hotel_c_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     defaults:
       run:
         working-directory: backend
@@ -52,6 +68,10 @@ jobs:
       # Testy e2e używają atrapy bazy, więc nie potrzebują serwisu PostgreSQL. (DamianTchorzewski_72206)
       - name: Run e2e tests
         run: npm run test:e2e
+
+      # Test sam tworzy bazę hotel_c_test i stosuje migracje, więc sprawdza także constraint blokujący podwójne rezerwacje. (DamianTchorzewski_72206)
+      - name: Run integration tests (PostgreSQL)
+        run: npm run test:integration
 
       - name: Build backend
         run: npm run build
