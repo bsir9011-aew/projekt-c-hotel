@@ -1,0 +1,1397 @@
+{
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unreachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Check application and database status",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/rooms": {
+      "get": {
+        "description": "Lists the rooms offered by the hotel. When dates are given, the response also contains the number of nights, the cost of the stay and the availability of every room. Dates must be given together, checkIn must not be in the past.",
+        "operationId": "RoomsController_search",
+        "parameters": [
+          {
+            "name": "checkIn",
+            "required": false,
+            "in": "query",
+            "description": "Arrival date, YYYY-MM-DD. Must be given together with checkOut",
+            "schema": {
+              "format": "date",
+              "example": "2026-11-15",
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkOut",
+            "required": false,
+            "in": "query",
+            "description": "Departure date, YYYY-MM-DD. Must be later than checkIn and given together with it",
+            "schema": {
+              "format": "date",
+              "example": "2026-11-18",
+              "type": "string"
+            }
+          },
+          {
+            "name": "guests",
+            "required": false,
+            "in": "query",
+            "description": "Number of guests. Only rooms with capacity >= guests are returned",
+            "schema": {
+              "minimum": 1,
+              "maximum": 20,
+              "example": 2,
+              "type": "number"
+            }
+          },
+          {
+            "name": "minPrice",
+            "required": false,
+            "in": "query",
+            "description": "Minimum price per night in PLN",
+            "schema": {
+              "minimum": 0,
+              "example": 200,
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "required": false,
+            "in": "query",
+            "description": "Maximum price per night in PLN. Must not be lower than minPrice",
+            "schema": {
+              "minimum": 0,
+              "example": 600,
+              "type": "number"
+            }
+          },
+          {
+            "name": "onlyAvailable",
+            "required": false,
+            "in": "query",
+            "description": "When true, occupied rooms are left out. Defaults to true if dates are given. Ignored without dates",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchRoomsResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters (VALIDATION_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Search rooms",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/api/v1/rooms/{id}": {
+      "get": {
+        "description": "Returns the full description of a room. When dates are given, it also contains the availability, the cost of the stay and the price of every package for those dates.",
+        "operationId": "RoomsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "example": "a1b2c3d4-e5f6-4890-abcd-ef1234567890",
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkIn",
+            "required": false,
+            "in": "query",
+            "description": "Arrival date, YYYY-MM-DD. Must be given together with checkOut",
+            "schema": {
+              "format": "date",
+              "example": "2026-11-15",
+              "type": "string"
+            }
+          },
+          {
+            "name": "checkOut",
+            "required": false,
+            "in": "query",
+            "description": "Departure date, YYYY-MM-DD. Must be later than checkIn and given together with it",
+            "schema": {
+              "format": "date",
+              "example": "2026-11-18",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomDetailsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid room id or dates (VALIDATION_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The room does not exist or is not offered (ROOM_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get room details",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/api/v1/packages": {
+      "get": {
+        "description": "Returns the active packages that can be added to a booking. Packages are not tied to a particular room.",
+        "operationId": "PackagesController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List holiday packages",
+        "tags": [
+          "packages"
+        ]
+      }
+    },
+    "/api/v1/bookings": {
+      "post": {
+        "description": "Books a room for the given dates. The price is calculated by the server: nights * room price plus the package surcharge. The response contains the booking code that the guest uses to verify or cancel the booking.",
+        "operationId": "BookingsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body or dates in the past (VALIDATION_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The room or the package does not exist or is not offered (ROOM_NOT_FOUND, PACKAGE_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The room is already booked in the selected dates (ROOM_NOT_AVAILABLE)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The number of guests exceeds the capacity of the room (GUESTS_EXCEED_CAPACITY)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a booking",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/api/v1/bookings/cancel": {
+      "post": {
+        "description": "Cancels a booking identified by the pair: booking code and e-mail used when booking. The room becomes available again in the search. Cancellation is possible until the day before the arrival date.",
+        "operationId": "BookingsController_cancel",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body (VALIDATION_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No booking matches the code and e-mail pair (BOOKING_NOT_FOUND). A wrong e-mail is not distinguished from a wrong code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The booking has already been cancelled (BOOKING_ALREADY_CANCELLED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The stay has already started (CANCELLATION_NOT_ALLOWED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cancel a booking",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/api/v1/integrations/bookings/{bookingCode}/verification": {
+      "get": {
+        "description": "Lets partner teams (massage, fitness) check whether the holder of a booking code has a stay in the hotel on a given day and which package services they are entitled to. Requires the X-API-Key header.",
+        "operationId": "IntegrationsController_verifyBooking",
+        "parameters": [
+          {
+            "name": "bookingCode",
+            "required": true,
+            "in": "path",
+            "description": "Booking code. Letter case is ignored",
+            "schema": {
+              "example": "HTL-2026-X89B",
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "Day for which the stay is checked, YYYY-MM-DD. Defaults to today in the hotel's time zone (Europe/Warsaw)",
+            "schema": {
+              "format": "date",
+              "example": "2026-11-16",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingVerificationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid booking code or date (VALIDATION_ERROR)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key (UNAUTHORIZED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No booking with this code (BOOKING_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api-key": []
+          }
+        ],
+        "summary": "Verify a guest stay",
+        "tags": [
+          "integrations"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Hotel C REST API",
+    "description": "Hotel system API: rooms, holiday packages, bookings and integrations with partner teams (massage, fitness, vouchers).",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Application and database status"
+    },
+    {
+      "name": "rooms",
+      "description": "Room search and details"
+    },
+    {
+      "name": "packages",
+      "description": "Holiday packages"
+    },
+    {
+      "name": "bookings",
+      "description": "Creating and cancelling bookings"
+    },
+    {
+      "name": "integrations",
+      "description": "Endpoints for partner teams: massage, fitness and vouchers"
+    }
+  ],
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "api-key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "schemas": {
+      "HealthResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ],
+            "example": "ok"
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "up"
+            ],
+            "example": "up"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-08T15:30:00.000Z"
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "timestamp"
+        ]
+      },
+      "ApiErrorCode": {
+        "type": "string",
+        "enum": [
+          "BAD_REQUEST",
+          "UNAUTHORIZED",
+          "FORBIDDEN",
+          "NOT_FOUND",
+          "CONFLICT",
+          "UNPROCESSABLE_ENTITY",
+          "TOO_MANY_REQUESTS",
+          "INTERNAL_ERROR",
+          "NOT_IMPLEMENTED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_ERROR",
+          "ROOM_NOT_FOUND",
+          "PACKAGE_NOT_FOUND",
+          "BOOKING_NOT_FOUND",
+          "ROOM_NOT_AVAILABLE",
+          "GUESTS_EXCEED_CAPACITY",
+          "BOOKING_ALREADY_CANCELLED",
+          "CANCELLATION_NOT_ALLOWED"
+        ],
+        "description": "Stable machine-readable error code"
+      },
+      "ErrorDetailDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Path of the invalid field, using dots for nested objects",
+            "example": "guestDetails.email"
+          },
+          "message": {
+            "type": "string",
+            "description": "What is wrong with the field",
+            "example": "email must be an email"
+          }
+        },
+        "required": [
+          "field",
+          "message"
+        ]
+      },
+      "ErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "description": "HTTP status code",
+            "example": 409
+          },
+          "error": {
+            "type": "string",
+            "description": "HTTP reason phrase",
+            "example": "Conflict"
+          },
+          "code": {
+            "description": "Stable machine-readable error code",
+            "example": "ROOM_NOT_AVAILABLE",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApiErrorCode"
+              }
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable description of the problem",
+            "example": "The room is not available for the selected dates."
+          },
+          "details": {
+            "description": "Per-field problems, empty when the error is not field related",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetailDto"
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-08T15:30:00.000Z"
+          },
+          "path": {
+            "type": "string",
+            "description": "Requested path without the query string",
+            "example": "/api/v1/bookings"
+          }
+        },
+        "required": [
+          "statusCode",
+          "error",
+          "code",
+          "message",
+          "details",
+          "timestamp",
+          "path"
+        ]
+      },
+      "SearchRoomsMetaDto": {
+        "type": "object",
+        "properties": {
+          "checkIn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "2026-11-15"
+          },
+          "checkOut": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "2026-11-18"
+          },
+          "nightsCount": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Number of nights. Null when no dates were given",
+            "example": 3
+          },
+          "guests": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "The guests filter echoed back. Null when it was not given",
+            "example": 2
+          },
+          "totalResults": {
+            "type": "number",
+            "description": "Number of rooms in data",
+            "example": 1
+          }
+        },
+        "required": [
+          "checkIn",
+          "checkOut",
+          "nightsCount",
+          "guests",
+          "totalResults"
+        ]
+      },
+      "RoomAvailabilityStatus": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "OCCUPIED"
+        ],
+        "description": "Availability for the requested dates. Null when no dates were given"
+      },
+      "RoomSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a1b2c3d4-e5f6-4890-abcd-ef1234567890"
+          },
+          "roomNumber": {
+            "type": "string",
+            "example": "101"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pokój Standard Dwuosobowy"
+          },
+          "pricePerNight": {
+            "type": "number",
+            "description": "Price per night in PLN with two decimal places",
+            "example": 350
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Maximum number of guests",
+            "example": 2
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://images.unsplash.com/photo-1611892440504-42a792e24d32"
+          },
+          "amenities": {
+            "example": [
+              "WiFi",
+              "TV",
+              "Klimatyzacja",
+              "Łazienka"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "shortDescription": {
+            "type": "string",
+            "description": "Short description, up to 160 characters, derived from the full description",
+            "example": "Komfortowy pokój z widokiem na ogród i dużym łóżkiem małżeńskim."
+          },
+          "totalStayPrice": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Cost of the room for the whole stay in PLN (nightsCount * pricePerNight). Null when no dates were given",
+            "example": 1050
+          },
+          "status": {
+            "description": "Availability for the requested dates. Null when no dates were given",
+            "example": "AVAILABLE",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoomAvailabilityStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isAvailable": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Convenience flag equal to status === AVAILABLE. Null when no dates were given",
+            "example": true
+          }
+        },
+        "required": [
+          "id",
+          "roomNumber",
+          "name",
+          "pricePerNight",
+          "capacity",
+          "imageUrl",
+          "amenities",
+          "shortDescription",
+          "totalStayPrice",
+          "status",
+          "isAvailable"
+        ]
+      },
+      "SearchRoomsResponseDto": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/SearchRoomsMetaDto"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoomSummaryDto"
+            }
+          }
+        },
+        "required": [
+          "meta",
+          "data"
+        ]
+      },
+      "PackageBillingType": {
+        "type": "string",
+        "enum": [
+          "ONCE",
+          "PER_NIGHT"
+        ]
+      },
+      "RoomPackageOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c9b52-8d3e-4c55-9a43-6a1f2f0d7b11"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pakiet Relaks SPA"
+          },
+          "description": {
+            "type": "string",
+            "example": "Masaż relaksacyjny oraz dostęp do strefy SPA."
+          },
+          "priceModifier": {
+            "type": "number",
+            "description": "Surcharge in PLN with two decimal places. Charged once or for every night, depending on billingType",
+            "example": 250
+          },
+          "billingType": {
+            "example": "ONCE",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PackageBillingType"
+              }
+            ]
+          },
+          "includedServices": {
+            "description": "Stable codes of the services included in the package, agreed with the partner teams",
+            "example": [
+              "MASSAGE_RELAX_60",
+              "SPA_ACCESS"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "priceForStay": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Surcharge for the whole requested stay in PLN. Null when no dates were given",
+            "example": 250
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "priceModifier",
+          "billingType",
+          "includedServices",
+          "priceForStay"
+        ]
+      },
+      "RoomDetailsDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a1b2c3d4-e5f6-4890-abcd-ef1234567890"
+          },
+          "roomNumber": {
+            "type": "string",
+            "example": "101"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pokój Standard Dwuosobowy"
+          },
+          "pricePerNight": {
+            "type": "number",
+            "description": "Price per night in PLN with two decimal places",
+            "example": 350
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Maximum number of guests",
+            "example": 2
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://images.unsplash.com/photo-1611892440504-42a792e24d32"
+          },
+          "amenities": {
+            "example": [
+              "WiFi",
+              "TV",
+              "Klimatyzacja",
+              "Łazienka"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string",
+            "example": "Przestronny pokój z widokiem na ogród, dużym łóżkiem małżeńskim i własną łazienką."
+          },
+          "nightsCount": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Number of nights. Null when no dates were given",
+            "example": 3
+          },
+          "totalStayPrice": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Cost of the room for the whole stay in PLN. Null when no dates were given",
+            "example": 1050
+          },
+          "status": {
+            "description": "Availability for the requested dates. Null when no dates were given",
+            "example": "AVAILABLE",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoomAvailabilityStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isAvailable": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Convenience flag equal to status === AVAILABLE. Null when no dates were given",
+            "example": true
+          },
+          "availablePackages": {
+            "description": "Active packages that can be added to a booking of this room",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoomPackageOptionDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "roomNumber",
+          "name",
+          "pricePerNight",
+          "capacity",
+          "imageUrl",
+          "amenities",
+          "description",
+          "nightsCount",
+          "totalStayPrice",
+          "status",
+          "isAvailable",
+          "availablePackages"
+        ]
+      },
+      "PackageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c9b52-8d3e-4c55-9a43-6a1f2f0d7b11"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pakiet Relaks SPA"
+          },
+          "description": {
+            "type": "string",
+            "example": "Masaż relaksacyjny oraz dostęp do strefy SPA."
+          },
+          "priceModifier": {
+            "type": "number",
+            "description": "Surcharge in PLN with two decimal places. Charged once or for every night, depending on billingType",
+            "example": 250
+          },
+          "billingType": {
+            "example": "ONCE",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PackageBillingType"
+              }
+            ]
+          },
+          "includedServices": {
+            "description": "Stable codes of the services included in the package, agreed with the partner teams",
+            "example": [
+              "MASSAGE_RELAX_60",
+              "SPA_ACCESS"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "priceModifier",
+          "billingType",
+          "includedServices"
+        ]
+      },
+      "PackageListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageDto"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "GuestDetailsDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Jan"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Kowalski"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "example": "jan.kowalski@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Digits with an optional leading plus. Spaces and hyphens are allowed, 7 to 20 characters",
+            "example": "+48123456789"
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName",
+          "email",
+          "phone"
+        ]
+      },
+      "CreateBookingDto": {
+        "type": "object",
+        "properties": {
+          "roomId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a1b2c3d4-e5f6-4890-abcd-ef1234567890"
+          },
+          "packageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional holiday package. Omit it or send null for none",
+            "format": "uuid",
+            "example": "3f1c9b52-8d3e-4c55-9a43-6a1f2f0d7b11"
+          },
+          "checkIn": {
+            "type": "string",
+            "description": "Arrival date, YYYY-MM-DD. Must not be in the past",
+            "format": "date",
+            "example": "2026-11-15"
+          },
+          "checkOut": {
+            "type": "string",
+            "description": "Departure date, YYYY-MM-DD. Must be later than checkIn",
+            "format": "date",
+            "example": "2026-11-18"
+          },
+          "guestsCount": {
+            "type": "number",
+            "description": "Number of guests. Must not exceed the capacity of the room",
+            "minimum": 1,
+            "maximum": 20,
+            "example": 2
+          },
+          "guestDetails": {
+            "$ref": "#/components/schemas/GuestDetailsDto"
+          },
+          "voucherCode": {
+            "type": "string",
+            "description": "Voucher code issued by the voucher team. Stored with the booking, no discount is applied yet",
+            "maxLength": 50,
+            "example": "JESIEN2026"
+          }
+        },
+        "required": [
+          "roomId",
+          "checkIn",
+          "checkOut",
+          "guestsCount",
+          "guestDetails"
+        ]
+      },
+      "BookingStatus": {
+        "type": "string",
+        "enum": [
+          "CONFIRMED",
+          "CANCELLED",
+          "COMPLETED"
+        ]
+      },
+      "BookingRoomDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "a1b2c3d4-e5f6-4890-abcd-ef1234567890"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pokój Standard Dwuosobowy"
+          },
+          "roomNumber": {
+            "type": "string",
+            "example": "101"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "roomNumber"
+        ]
+      },
+      "BookingPackageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c9b52-8d3e-4c55-9a43-6a1f2f0d7b11"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pakiet Relaks SPA"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "BookingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+          },
+          "bookingCode": {
+            "type": "string",
+            "description": "Code used to verify or cancel the booking without an account",
+            "example": "HTL-2026-X89B"
+          },
+          "status": {
+            "example": "CONFIRMED",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BookingStatus"
+              }
+            ]
+          },
+          "room": {
+            "$ref": "#/components/schemas/BookingRoomDto"
+          },
+          "package": {
+            "description": "Selected holiday package, null when none was chosen",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BookingPackageDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkIn": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-15"
+          },
+          "checkOut": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-18"
+          },
+          "nightsCount": {
+            "type": "number",
+            "example": 3
+          },
+          "guestsCount": {
+            "type": "number",
+            "example": 2
+          },
+          "totalPrice": {
+            "type": "number",
+            "description": "Total price of the stay in PLN: rooms for all nights plus the package surcharge",
+            "example": 1300
+          },
+          "guestDetails": {
+            "$ref": "#/components/schemas/GuestDetailsDto"
+          },
+          "voucherCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "JESIEN2026"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-08T15:30:00.000Z"
+          },
+          "cancelledAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Moment of the cancellation, null for an active booking",
+            "format": "date-time",
+            "example": null
+          },
+          "cancelReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Reason given while cancelling, null when none was given",
+            "example": null
+          }
+        },
+        "required": [
+          "id",
+          "bookingCode",
+          "status",
+          "room",
+          "package",
+          "checkIn",
+          "checkOut",
+          "nightsCount",
+          "guestsCount",
+          "totalPrice",
+          "guestDetails",
+          "voucherCode",
+          "createdAt",
+          "cancelledAt",
+          "cancelReason"
+        ]
+      },
+      "CancelBookingDto": {
+        "type": "object",
+        "properties": {
+          "bookingCode": {
+            "type": "string",
+            "description": "Booking code received after the booking. Letter case is ignored",
+            "example": "HTL-2026-X89B"
+          },
+          "email": {
+            "type": "string",
+            "description": "E-mail address given when the booking was made",
+            "format": "email",
+            "example": "jan.kowalski@example.com"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Optional reason of the cancellation",
+            "maxLength": 500,
+            "example": "Zmiana planów wyjazdowych"
+          }
+        },
+        "required": [
+          "bookingCode",
+          "email"
+        ]
+      },
+      "VerifiedPackageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3f1c9b52-8d3e-4c55-9a43-6a1f2f0d7b11"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pakiet Relaks SPA"
+          },
+          "includedServices": {
+            "description": "Stable codes of the services the guest is entitled to",
+            "example": [
+              "MASSAGE_RELAX_60",
+              "SPA_ACCESS"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "includedServices"
+        ]
+      },
+      "BookingVerificationDto": {
+        "type": "object",
+        "properties": {
+          "bookingCode": {
+            "type": "string",
+            "example": "HTL-2026-X89B"
+          },
+          "status": {
+            "example": "CONFIRMED",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BookingStatus"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "The day for which the stay was checked",
+            "format": "date",
+            "example": "2026-11-16"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "True when the booking is CONFIRMED and checkIn <= date <= checkOut. The departure day still counts as active",
+            "example": true
+          },
+          "checkIn": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-15"
+          },
+          "checkOut": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-18"
+          },
+          "guestsCount": {
+            "type": "number",
+            "example": 2
+          },
+          "package": {
+            "description": "Package bought with the booking, null when there is none",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerifiedPackageDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "bookingCode",
+          "status",
+          "date",
+          "isActive",
+          "checkIn",
+          "checkOut",
+          "guestsCount",
+          "package"
+        ]
+      }
+    }
+  }
+}

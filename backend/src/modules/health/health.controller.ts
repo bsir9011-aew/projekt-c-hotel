@@ -1,10 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import {
-  ApiOkResponse,
-  ApiOperation,
-  ApiServiceUnavailableResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiErrorResponses } from '../../common/swagger/api-error-responses.decorator.js';
 import { HealthResponseDto } from './dto/health-response.dto.js';
 import { HealthService } from './health.service.js';
 
@@ -16,10 +12,7 @@ export class HealthController {
   @Get()
   @ApiOperation({ summary: 'Check application and database status' })
   @ApiOkResponse({ type: HealthResponseDto })
-  @ApiServiceUnavailableResponse({
-    description: 'The database is unreachable',
-    type: HealthResponseDto,
-  })
+  @ApiErrorResponses({ 503: 'The database is unreachable' })
   check(): Promise<HealthResponseDto> {
     return this.healthService.check();
   }

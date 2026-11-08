@@ -1,32 +1,13 @@
 import { INestApplication, Logger } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
-import { AppModule } from '../src/app.module.js';
-import { setupApp } from '../src/app.setup.js';
-import { PrismaService } from '../src/prisma/prisma.service.js';
+import { createTestApp, prismaMock } from './create-test-app.js';
 
 describe('Application (e2e)', () => {
   let app: INestApplication<App>;
 
-  // Baza jest podstawiona atrapą, więc testy nie wymagają działającego PostgreSQL. (DamianTchorzewski_72206)
-  const prismaMock = {
-    $queryRaw: vi.fn(),
-    $connect: vi.fn(),
-    $disconnect: vi.fn(),
-  };
-
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue(prismaMock)
-      .compile();
-
-    app = moduleRef.createNestApplication();
-    setupApp(app);
-    await app.init();
+    app = await createTestApp();
   });
 
   beforeEach(() => {
@@ -60,7 +41,30 @@ describe('Application (e2e)', () => {
       .get('/api/v1/health')
       .expect(503);
 
-    expect(response.body).toMatchObject({ status: 'error', database: 'down' });
+    expect(response.body).toMatchObject({
+      statusCode: 503,
+      code: 'SERVICE_UNAVAILABLE',
+      path: '/api/v1/health',
+    });
+  });
+
+  it('returns unknown routes in the standard error format', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/unknown?email=jan@example.com')
+      .expect(404);
+
+    expect(response.body).toMatchObject({
+      statusCode: 404,
+      error: 'Not Found',
+      code: 'NOT_FOUND',
+      details: [],
+    });
+    // Query string nie może trafić do odpowiedzi, bo może zawierać dane osobowe. (DamianTchorzewski_72206)
+    expect(response.body.path).toBe('/api/v1/unknown');
+    expect(JSON.stringify(response.body)).not.toContain('jan@example.com');
+    expect(new Date(response.body.timestamp).toString()).not.toBe(
+      'Invalid Date',
+    );
   });
 
   it('serves the OpenAPI document under /api/docs-json', async () => {

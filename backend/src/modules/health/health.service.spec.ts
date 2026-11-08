@@ -1,5 +1,7 @@
-import { Logger, ServiceUnavailableException } from '@nestjs/common';
+import { HttpStatus, Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { ApiErrorCode } from '../../common/errors/api-error-code.enum.js';
+import { ApiException } from '../../common/errors/api-exception.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { HealthService } from './health.service.js';
 
@@ -36,11 +38,15 @@ describe('HealthService', () => {
     expect(new Date(result.timestamp).toString()).not.toBe('Invalid Date');
   });
 
-  it('throws ServiceUnavailableException when the database is unreachable', async () => {
+  it('throws a 503 ApiException when the database is unreachable', async () => {
     queryRaw.mockRejectedValue(new Error('connection refused'));
 
-    await expect(service.check()).rejects.toBeInstanceOf(
-      ServiceUnavailableException,
+    const error: unknown = await service.check().catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiException);
+    expect((error as ApiException).getStatus()).toBe(
+      HttpStatus.SERVICE_UNAVAILABLE,
     );
+    expect((error as ApiException).code).toBe(ApiErrorCode.SERVICE_UNAVAILABLE);
   });
 });

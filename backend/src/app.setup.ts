@@ -1,6 +1,18 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { HttpAdapterHost } from '@nestjs/core';
+import {
+  DocumentBuilder,
+  SwaggerModule,
+  type OpenAPIObject,
+} from '@nestjs/swagger';
+import {
+  API_KEY_HEADER,
+  API_KEY_SECURITY_NAME,
+} from './common/constants/api.constants.js';
+import { validationExceptionFactory } from './common/errors/validation-exception.factory.js';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter.js';
+import { VALIDATION_OPTIONS } from './common/validation/validation.options.js';
 import type { EnvironmentVariables } from './config/env.validation.js';
 
 export const API_PREFIX = 'api/v1';
@@ -23,23 +35,34 @@ export function setupApp(app: INestApplication): void {
   // Odrzuca nieznane pola i konwertuje dane wejściowe na typy z DTO. (DamianTchorzewski_72206)
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      ...VALIDATION_OPTIONS,
       transform: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 
+  // Każdy błąd, także nieoczekiwany, wychodzi w jednolitym formacie z kontraktu API. (DamianTchorzewski_72206)
+  app.useGlobalFilters(new ApiExceptionFilter(app.get(HttpAdapterHost)));
+
   // Swagger musi być skonfigurowany po prefiksie, aby ścieżki w dokumentacji były poprawne. (DamianTchorzewski_72206)
-  setupSwagger(app);
+  SwaggerModule.setup(SWAGGER_PATH, app, createOpenApiDocument(app));
 }
 
-function setupSwagger(app: INestApplication): void {
+// Buduje dokument OpenAPI, który jest maszynowo odczytywalną wersją kontraktu API. (DamianTchorzewski_72206)
+export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
   const options = new DocumentBuilder()
     .setTitle('Hotel C REST API')
     .setDescription(
       'Hotel system API: rooms, holiday packages, bookings and integrations with partner teams (massage, fitness, vouchers).',
     )
     .setVersion('1.0.0')
+    // OpenAPI 3.1 opisuje null jako zwykły typ. W wersji 3.0 pole nullable z odwołaniem do schematu formalnie nie dopuszcza null. (DamianTchorzewski_72206)
+    .setOpenAPIVersion('3.1.0')
+    .addServer('http://localhost:3000', 'Local development')
+    .addApiKey(
+      { type: 'apiKey', name: API_KEY_HEADER, in: 'header' },
+      API_KEY_SECURITY_NAME,
+    )
     .addTag('health', 'Application and database status')
     .addTag('rooms', 'Room search and details')
     .addTag('packages', 'Holiday packages')
@@ -50,9 +73,5 @@ function setupSwagger(app: INestApplication): void {
     )
     .build();
 
-  SwaggerModule.setup(
-    SWAGGER_PATH,
-    app,
-    SwaggerModule.createDocument(app, options),
-  );
+  return SwaggerModule.createDocument(app, options);
 }
