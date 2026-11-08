@@ -91,7 +91,8 @@ i frontend, a baza działa dalej).
 Praca po pierwszej konfiguracji wymaga tylko `npm start`. Bazę zatrzymasz poleceniem `npm run db:stop`.
 
 **Po pobraniu zmian z repozytorium (`git pull`)** w większości przypadków nic więcej nie trzeba robić.
-Powtórz `npm run setup`, jeśli w pobranych zmianach:
+Powtórz `npm run setup` (po zatrzymaniu działającego `npm start`, bo na Windowsie uruchomiony serwer blokuje pliki
+w `node_modules`), jeśli w pobranych zmianach:
 
 - zmienił się plik `package-lock.json` w `backend/` lub `frontend/` (nowe lub zmienione zależności),
 - pojawiła się nowa migracja w `backend/prisma/migrations/` (zmiana schematu bazy).
@@ -159,8 +160,34 @@ Skrypty `npm run setup` i `npm start` nie są wymagane. To samo można zrobić r
 **`Node.js 22.12 or newer is required`.** Zainstaluj nowszego Node.js (najprościej przez [nvm](https://github.com/nvm-sh/nvm)
 albo instalator z [nodejs.org](https://nodejs.org)) i uruchom polecenie ponownie.
 
-**`Dependencies are not installed yet` lub brak pliku `backend/.env`.** To znaczy, że nie wykonano jeszcze
-`npm run setup`. Uruchom go raz, a potem `npm start`.
+**`Dependencies of … are not installed` (albo `'vite' is not recognized`) lub brak pliku `backend/.env`.** Nie wykonano
+jeszcze `npm run setup` albo instalacja została przerwana w połowie (patrz niżej: `EPERM`). Uruchom `npm run setup`,
+a potem `npm start`.
+
+**`npm error Missing script: "start"` w katalogu `frontend/` lub `backend/`.** Polecenia `npm start` i `npm run setup`
+istnieją tylko w katalogu głównym repozytorium. W podkatalogach działają ich własne skrypty (`npm run dev` we `frontend/`,
+`npm run start:dev` w `backend/`), ale potrzebują wcześniej zainstalowanych zależności.
+
+**`EPERM: operation not permitted, unlink … .node` podczas `npm ci` (Windows).** Coś jeszcze używa plików z
+`node_modules`, najczęściej nadal działający `npm start`, Vite lub Nest (także w innym terminalu albo w tle po
+zamkniętym oknie). Windows nie pozwala wtedy usunąć plików, a `npm ci` zostawia niepełny katalog `node_modules`.
+Zatrzymaj wszystko (`Ctrl+C` w terminalu z `npm start`), a jeśli nie wiesz, który proces działa, znajdź go po porcie
+i zakończ:
+
+```powershell
+netstat -ano | findstr ":3000 :5173"
+```
+
+```powershell
+taskkill /PID <numer z ostatniej kolumny> /T /F
+```
+
+Następnie uruchom `npm run setup` ponownie. Skrypt sam odmówi startu, jeśli porty 3000 lub 5173 są zajęte, żeby do
+takiej sytuacji nie dopuścić.
+
+**Ostrzeżenia `npm warn EBADENGINE Unsupported engine` podczas instalacji.** Niektóre biblioteki deklarują nowszą
+wersję Node.js (np. 22.22) niż ta, której używasz (np. 22.15). Projekt działa na Node.js 22.12 i nowszym, a ostrzeżenia
+nie przerywają instalacji. Znikną po aktualizacji do najnowszej wersji Node.js 22 LTS.
 
 **„Docker is not running or does not respond".** Uruchom Docker Desktop i poczekaj, aż pokaże, że działa.
 
@@ -181,9 +208,10 @@ Jeśli któryś katalog nie istnieje, pomiń to polecenie, a jeśli nazwa `.stal
 uruchom Docker Desktop ponownie. Aby tego uniknąć, zamykaj Docker Desktop z menu przy zegarze, a nie przez
 Menedżera zadań.
 
-**Port 3000 lub 5173 jest zajęty.** Zamknij poprzednio uruchomiony projekt. Port API zmienisz zmienną `PORT` w
-`backend/.env`. Jeśli port 5173 jest zajęty, Vite uruchomi frontend na innym porcie, a API przyjmuje zapytania
-(CORS) tylko z adresu ustawionego w `FRONTEND_URL` w `backend/.env`, więc dostosuj tę wartość.
+**`Port 3000 (API) is already in use` lub `Port 5173 (frontend) is already in use`.** Projekt jest już uruchomiony
+(np. w innym terminalu) albo port zajmuje inny program. Zatrzymaj poprzedni `npm start` (`Ctrl+C`) lub znajdź proces
+poleceniami z punktu o `EPERM` powyżej. Port API zmienisz zmienną `PORT` w `backend/.env`, ale port frontendu (5173)
+jest ustawiony w Vite, a API przyjmuje zapytania (CORS) tylko z adresu `FRONTEND_URL` z `backend/.env`.
 
 **Port 5432 jest zajęty** (np. przez lokalnie zainstalowany PostgreSQL). Ustaw wolny port w zmiennej `POSTGRES_PORT`
 w pliku `.env` w katalogu głównym oraz ten sam port w `DATABASE_URL` w `backend/.env`, a potem uruchom `npm run db:up`.

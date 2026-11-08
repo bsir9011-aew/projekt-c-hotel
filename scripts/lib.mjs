@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync } from 'node:fs';
+import net from 'node:net';
 import { resolve } from 'node:path';
 
 export const ROOT = resolve(import.meta.dirname, '..');
@@ -57,7 +58,7 @@ export function ensureDockerRunning() {
   }
 }
 
-export function runSync(label, command, args, cwd = ROOT) {
+export function runSync(label, command, args, cwd = ROOT, hint = '') {
   console.log(`${paint('cyan', '>')} ${label}`);
   const result = spawnSync(command, args, {
     cwd,
@@ -66,7 +67,62 @@ export function runSync(label, command, args, cwd = ROOT) {
   });
 
   if (result.status !== 0) {
-    fail(`The step "${label}" failed.`);
+    fail(`The step "${label}" failed.${hint ? ` ${hint}` : ''}`);
+  }
+}
+
+// npm zapisuje ukryty plik .package-lock.json dopiero po zakończonej instalacji, więc jego brak oznacza instalację przerwaną w połowie. (DamianTchorzewski_72206)
+export function hasInstalledDependencies(directory) {
+  return existsSync(resolve(directory, 'node_modules', '.package-lock.json'));
+}
+
+// Port API pochodzi z backend/.env (zmienna PORT), a gdy jej brakuje, backend używa 3000. (DamianTchorzewski_72206)
+export function readApiPort() {
+  const envFile = resolve(BACKEND, '.env');
+  const match = existsSync(envFile)
+    ? /^PORT=(\d+)/m.exec(readFileSync(envFile, 'utf8'))
+    : null;
+
+  return match ? Number(match[1]) : 3000;
+}
+
+function canConnect(host, port) {
+  return new Promise((resolveCheck) => {
+    const socket = net.connect({ host, port });
+    socket.setTimeout(1000);
+    socket.once('connect', () => {
+      socket.destroy();
+      resolveCheck(true);
+    });
+    socket.once('timeout', () => {
+      socket.destroy();
+      resolveCheck(false);
+    });
+    socket.once('error', () => {
+      socket.destroy();
+      resolveCheck(false);
+    });
+  });
+}
+
+// Próba połączenia nie zajmuje portu, a sprawdza oba adresy loopback, bo Vite nasłuchuje tylko na IPv6 (::1), a Nest na IPv4. (DamianTchorzewski_72206)
+export async function isPortInUse(port) {
+  const results = await Promise.all(
+    ['127.0.0.1', '::1'].map((host) => canConnect(host, port)),
+  );
+
+  return results.some(Boolean);
+}
+
+// Zajęty port zwykle oznacza, że projekt już działa w innym terminalu. Na Windowsie uruchomiony serwer blokuje pliki w node_modules,
+// więc instalacja kończyła się błędem EPERM i zostawiała niepełny katalog node_modules. (DamianTchorzewski_72206)
+export async function ensurePortsFree(ports) {
+  for (const { port, name } of ports) {
+    if (await isPortInUse(port)) {
+      fail(
+        `Port ${port} (${name}) is already in use. If the project is already running, stop it with Ctrl+C in its terminal and try again. Otherwise close the program that uses this port.`,
+      );
+    }
   }
 }
 
