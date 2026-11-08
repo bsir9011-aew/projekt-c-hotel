@@ -1,0 +1,27 @@
+# Środowisko lokalne projektu Hotel C: baza danych PostgreSQL. (DamianTchorzewski_72206)
+# Uruchomienie: docker compose up -d (DamianTchorzewski_72206)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hotel_c_postgres
+    restart: unless-stopped
+    environment:
+      # Wartości domyślne pozwalają uruchomić bazę bez pliku .env. (DamianTchorzewski_72206)
+      POSTGRES_USER: ${POSTGRES_USER:-hotel_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hotel_password}
+      POSTGRES_DB: ${POSTGRES_DB:-hotel_c_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Dane przetrwają restart kontenera. (DamianTchorzewski_72206)
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Kontener jest zdrowy dopiero wtedy, gdy baza przyjmuje połączenia. (DamianTchorzewski_72206)
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hotel_user} -d ${POSTGRES_DB:-hotel_c_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

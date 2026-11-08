@@ -1,0 +1,57 @@
+name: Hotel C - Backend CI
+
+# Workflow uruchamia się tylko dla zmian w backendzie, aby nie obciążać CI zmianami we frontendzie. (DamianTchorzewski_72206)
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backend-checks:
+    name: Lint, Tests and Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Klient Prisma nie jest w repozytorium, a lint i testy wymagają jego typów. (DamianTchorzewski_72206)
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Check code with oxlint
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm test
+
+      # Testy e2e używają atrapy bazy, więc nie potrzebują serwisu PostgreSQL. (DamianTchorzewski_72206)
+      - name: Run e2e tests
+        run: npm run test:e2e
+
+      - name: Build backend
+        run: npm run build

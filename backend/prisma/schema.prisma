@@ -1,0 +1,92 @@
+// Schemat bazy danych systemu rezerwacji Hotel C. (DamianTchorzewski_72206)
+// Opis modelu i reguł biznesowych: docs/architecture.md (DamianTchorzewski_72206)
+
+generator client {
+  provider            = "prisma-client"
+  // Klient jest generowany do kodu źródłowego i nie trafia do repozytorium. (DamianTchorzewski_72206)
+  output              = "../src/generated/prisma"
+  // Projekt jest modułem ESM, więc klient musi używać importów z rozszerzeniem .js. (DamianTchorzewski_72206)
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PackageBillingType {
+  ONCE
+  PER_NIGHT
+}
+
+model Room {
+  id            String   @id @default(uuid())
+  roomNumber    String   @unique @map("room_number")
+  name          String
+  description   String   @db.Text
+  pricePerNight Decimal  @map("price_per_night") @db.Decimal(10, 2)
+  capacity      Int
+  imageUrl      String   @map("image_url")
+  amenities     String[]
+  // Pokój wyłączony z oferty (np. awaria) nie jest zwracany w wyszukiwarce. (DamianTchorzewski_72206)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  bookings Booking[]
+
+  @@map("rooms")
+}
+
+model Package {
+  id               String             @id @default(uuid())
+  name             String
+  description      String             @db.Text
+  // Dopłata za pakiet: jednorazowa albo za każdą noc, zależnie od billingType. (DamianTchorzewski_72206)
+  priceModifier    Decimal            @map("price_modifier") @db.Decimal(10, 2)
+  billingType      PackageBillingType @default(ONCE) @map("billing_type")
+  // Usługi z innych grup (masaże, fitness), dołączone do pakietu. (DamianTchorzewski_72206)
+  includedServices String[]           @map("included_services")
+  isActive         Boolean            @default(true) @map("is_active")
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  bookings Booking[]
+
+  @@map("packages")
+}
+
+model Booking {
+  id             String        @id @default(uuid())
+  // Czytelny kod rezerwacji, np. HTL-2026-X89B. Służy do weryfikacji i anulacji. (DamianTchorzewski_72206)
+  bookingCode    String        @unique @map("booking_code")
+  roomId         String        @map("room_id")
+  packageId      String?       @map("package_id")
+  // Daty pobytu to dni kalendarzowe bez godziny. (DamianTchorzewski_72206)
+  checkIn        DateTime      @map("check_in") @db.Date
+  checkOut       DateTime      @map("check_out") @db.Date
+  guestsCount    Int           @map("guests_count")
+  nightsCount    Int           @map("nights_count")
+  totalPrice     Decimal       @map("total_price") @db.Decimal(10, 2)
+  status         BookingStatus @default(CONFIRMED)
+  guestFirstName String        @map("guest_first_name")
+  guestLastName  String        @map("guest_last_name")
+  guestEmail     String        @map("guest_email")
+  guestPhone     String        @map("guest_phone")
+  voucherCode    String?       @map("voucher_code")
+  cancelReason   String?       @map("cancel_reason")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  cancelledAt    DateTime?     @map("cancelled_at")
+
+  room    Room     @relation(fields: [roomId], references: [id])
+  package Package? @relation(fields: [packageId], references: [id])
+
+  // Przyspiesza sprawdzanie dostępności pokoju w zadanym terminie. (DamianTchorzewski_72206)
+  @@index([roomId, checkIn, checkOut])
+  @@map("bookings")
+}
