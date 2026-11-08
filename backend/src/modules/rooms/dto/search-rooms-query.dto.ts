@@ -28,9 +28,9 @@ export class SearchRoomsQueryDto extends StayDatesQueryDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
   @Min(1)
   @Max(MAX_GUESTS_PER_BOOKING)
+  @IsInt()
   guests?: number;
 
   @ApiPropertyOptional({
@@ -40,8 +40,8 @@ export class SearchRoomsQueryDto extends StayDatesQueryDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  @IsNumber({ maxDecimalPlaces: 2 })
   minPrice?: number;
 
   @ApiPropertyOptional({
@@ -52,8 +52,8 @@ export class SearchRoomsQueryDto extends StayDatesQueryDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  @IsNumber({ maxDecimalPlaces: 2 })
   maxPrice?: number;
 
   @ApiPropertyOptional({

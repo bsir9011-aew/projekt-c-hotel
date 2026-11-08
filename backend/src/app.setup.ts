@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { validationExceptionFactory } from './common/errors/validation-exception.factory.js';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter.js';
+import { VALIDATION_OPTIONS } from './common/validation/validation.options.js';
 import type { EnvironmentVariables } from './config/env.validation.js';
 
 export const API_PREFIX = 'api/v1';
@@ -31,8 +32,7 @@ export function setupApp(app: INestApplication): void {
   // Odrzuca nieznane pola i konwertuje dane wejściowe na typy z DTO. (DamianTchorzewski_72206)
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      ...VALIDATION_OPTIONS,
       transform: true,
       exceptionFactory: validationExceptionFactory,
     }),

@@ -1,15 +1,13 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { flattenValidationErrors } from '../../../common/errors/validation-exception.factory.js';
+import { VALIDATION_OPTIONS } from '../../../common/validation/validation.options.js';
 import { SearchRoomsQueryDto } from './search-rooms-query.dto.js';
 
-// Odtwarza zachowanie ValidationPipe z app.setup.ts, czyli konwersję i odrzucanie nieznanych pól. (DamianTchorzewski_72206)
+// Odtwarza zachowanie ValidationPipe z app.setup.ts: konwersję oraz te same opcje walidacji. (DamianTchorzewski_72206)
 async function check(query: Record<string, unknown>) {
   const instance = plainToInstance(SearchRoomsQueryDto, query);
-  const errors = await validate(instance, {
-    whitelist: true,
-    forbidNonWhitelisted: true,
-  });
+  const errors = await validate(instance, VALIDATION_OPTIONS);
 
   return { instance, details: flattenValidationErrors(errors) };
 }
