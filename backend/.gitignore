@@ -1,0 +1,25 @@
+# Wynik kompilacji i zależności. (DamianTchorzewski_72206)
+/dist
+/node_modules
+/build
+
+# Logi. (DamianTchorzewski_72206)
+logs
+*.log
+npm-debug.log*
+
+# Raporty pokrycia testami. (DamianTchorzewski_72206)
+/coverage
+/.nyc_output
+
+# Pliki systemowe i edytorów. (DamianTchorzewski_72206)
+.DS_Store
+/.idea
+
+# Lokalne zmienne środowiskowe nie mogą trafić do repozytorium. (DamianTchorzewski_72206)
+.env
+.env.*
+!.env.example
+
+# Cache kompilacji przyrostowej TypeScript. (DamianTchorzewski_72206)
+*.tsbuildinfo
